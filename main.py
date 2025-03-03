@@ -30,8 +30,9 @@ def save_stats(stats):
 
 stats = load_stats()
 
-# Список вопросов и действий
-truths = ["Какая твоя самая большая тайна?",
+# Списки вопросов и действий
+truths = [
+    "Какая твоя самая большая тайна?",
     "Если бы ты мог изменить одно событие в своей жизни, что бы это было?",
     "Какой самый неловкий момент у тебя был?",
     "Было ли у тебя влюбленность в кого-то из этой группы?",
@@ -116,9 +117,11 @@ truths = ["Какая твоя самая большая тайна?",
     "Ты когда-нибудь скрывал правду, чтобы не разочаровать кого-то?",
     "Ты когда-нибудь лгал, чтобы избежать наказания?",
     "Ты когда-нибудь расставался с человеком, хотя не хотел этого делать?",
-    "Ты когда-нибудь чувствовал, что твою доброту воспринимают как слабость?",]
+    "Ты когда-нибудь чувствовал, что твою доброту воспринимают как слабость?"
+]
 
-dares = ["Сделай 10 приседаний прямо сейчас!",
+dares = [
+    "Сделай 10 приседаний прямо сейчас!",
     "Отправь голосовое сообщение с комплиментом любому участнику чата.",
     "Скажи первую фразу, которая придет в голову, и не объясняй почему.",
     "Поставь смешную аватарку на 10 минут.",
@@ -155,7 +158,8 @@ dares = ["Сделай 10 приседаний прямо сейчас!",
     "Напиши 5 вещей, которые тебе нравятся.",
     "Назови всех своих учителей по имени.",
     "Придумай способ, как провести день в парке.",
-    "Пожалуйста, представь себя супергероем и покажи своё главное суперспособность.",]
+    "Пожалуйста, представь себя супергероем и покажи своё главное суперспособность." 
+]
 
 # Меню команд
 async def set_commands(bot: Bot):
@@ -186,8 +190,10 @@ async def send_welcome(message: types.Message, state: FSMContext):
     logging.info("Received /start command")
     user_id = str(message.from_user.id)
     if user_id not in stats:
-        stats[user_id] = 0
+        stats[user_id] = {"points": 0, "in_game": False}
     await state.update_data(in_game=True)
+    stats[user_id]["in_game"] = True
+    save_stats(stats)
     await message.answer("Привет! Давай сыграем в 'Правду или Действие'! Выбирай:", reply_markup=game_keyboard)
 
 # Обработчик команды /stop и кнопки "⛔ Стоп"
@@ -195,8 +201,9 @@ async def send_welcome(message: types.Message, state: FSMContext):
 async def stop_game(message: types.Message, state: FSMContext):
     logging.info("Game stopped")
     user_id = str(message.from_user.id)
-    points = stats.get(user_id, 0)
+    points = stats.get(user_id, {}).get("points", 0)
     await state.update_data(in_game=False)
+    stats[user_id]["in_game"] = False
     save_stats(stats)
     await message.answer(f"Игра остановлена. Ты набрал {points} очков. Нажми кнопку ниже, чтобы начать заново.", reply_markup=start_keyboard)
 
@@ -204,13 +211,16 @@ async def stop_game(message: types.Message, state: FSMContext):
 @router.message(lambda message: message.text == "📊 Статистика" or message.text == "/stat")
 async def show_stats(message: types.Message, state: FSMContext):
     user_id = str(message.from_user.id)
-    points = stats.get(user_id, 0)
+    points = stats.get(user_id, {}).get("points", 0)
     await message.answer(f"📊 Твоя статистика: {points} очков")
 
 # Обработчик кнопки "🚀 Начать игру"
 @router.message(lambda message: message.text == "🚀 Начать игру")
 async def restart_game(message: types.Message, state: FSMContext):
     logging.info("Game restarted")
+    user_id = str(message.from_user.id)
+    stats[user_id]["in_game"] = True
+    save_stats(stats)
     await state.update_data(in_game=True)
     await message.answer("Игра началась! Выбирай:", reply_markup=game_keyboard)
 
@@ -219,17 +229,17 @@ async def restart_game(message: types.Message, state: FSMContext):
 async def truth_handler(message: types.Message, state: FSMContext):
     logging.info("Truth selected")
     user_id = str(message.from_user.id)
-    stats[user_id] = stats.get(user_id, 0) + 1
+    stats[user_id]["points"] = stats.get(user_id, {}).get("points", 0) + 1
     save_stats(stats)
-    await message.answer(f"{random.choice(truths)}\n\nТы получил 1 очко! Всего очков: {stats[user_id]}")
+    await message.answer(f"{random.choice(truths)}\n\nТы получил 1 очко! Всего очков: {stats[user_id]['points']}")
 
 @router.message(lambda message: message.text == "💪 Действие")
 async def dare_handler(message: types.Message, state: FSMContext):
     logging.info("Dare selected")
     user_id = str(message.from_user.id)
-    stats[user_id] = stats.get(user_id, 0) + 1
+    stats[user_id]["points"] = stats.get(user_id, {}).get("points", 0) + 1
     save_stats(stats)
-    await message.answer(f"{random.choice(dares)}\n\nТы получил 1 очко! Всего очков: {stats[user_id]}")
+    await message.answer(f"{random.choice(dares)}\n\nТы получил 1 очко! Всего очков: {stats[user_id]['points']}")
 
 # Запуск бота
 async def main():
