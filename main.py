@@ -235,6 +235,11 @@ async def restart_game(message: types.Message, state: FSMContext):
     try:
         logging.info("Game restarted")
         user_id = str(message.from_user.id)
+        
+        # Если записи для пользователя нет, создаем её
+        if user_id not in stats:
+            stats[user_id] = {"points": 0, "in_game": False}
+        
         stats[user_id]["in_game"] = True
         save_stats(stats)
         await state.update_data(in_game=True)
@@ -288,7 +293,6 @@ async def main():
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     asyncio.run(main())
-
 
     file.write("# p-d\n")
 import subprocess
