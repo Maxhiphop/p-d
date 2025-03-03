@@ -214,11 +214,24 @@ async def main():
 if __name__ == '__main__':
     asyncio.run(main())
 
+with open("README.md", "a") as file:
+    file.write("# p-d\n")
+import subprocess
 
-    echo "# p-d" >> README.md
-git init
-git add README.md
-git commit -m "first commit"
-git branch -M main
-git remote add origin https://github.com/Maxhiphop/p-d.git
-git push -u origin main
+# Инициализация репозитория
+subprocess.run(["git", "init"])
+
+# Добавление файла в репозиторий
+subprocess.run(["git", "add", "README.md"])
+
+# Создание коммита
+subprocess.run(["git", "commit", "-m", "first commit"])
+
+# Установка основной ветки
+subprocess.run(["git", "branch", "-M", "main"])
+
+# Добавление удаленного репозитория
+subprocess.run(["git", "remote", "add", "origin", "https://github.com/Maxhiphop/p-d.git"])
+
+# Отправка изменений на GitHub
+subprocess.run(["git", "push", "-u", "origin", "main"])
