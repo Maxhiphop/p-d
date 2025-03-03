@@ -14,7 +14,7 @@ dp = Dispatcher(storage=storage)
 router = Router()
 
 # Список вопросов и действий
-truths = ["Какая твоя самая большая тайна?",
+truths = [Какая твоя самая большая тайна?",
     "Если бы ты мог изменить одно событие в своей жизни, что бы это было?",
     "Какой самый неловкий момент у тебя был?",
     "Было ли у тебя влюбленность в кого-то из этой группы?",
@@ -100,7 +100,7 @@ truths = ["Какая твоя самая большая тайна?",
     "Ты когда-нибудь лгал, чтобы избежать наказания?",
     "Ты когда-нибудь расставался с человеком, хотя не хотел этого делать?",
     "Ты когда-нибудь чувствовал, что твою доброту воспринимают как слабость?"]
-dares = [ "Сделай 10 приседаний прямо сейчас!",
+dares = ["Сделай 10 приседаний прямо сейчас!",
     "Отправь голосовое сообщение с комплиментом любому участнику чата.",
     "Скажи первую фразу, которая придет в голову, и не объясняй почему.",
     "Поставь смешную аватарку на 10 минут.",
@@ -169,33 +169,41 @@ async def send_welcome(message: types.Message, state: FSMContext):
     if user_data.get('in_game', False):
         await message.answer("Ты уже играешь! Выбирай:", reply_markup=game_keyboard)
     else:
-        await state.update_data(in_game=True)
+        await state.update_data(in_game=True, points=0)
         await message.answer("Привет! Давай сыграем в 'Правду или Действие'! Выбирай:", reply_markup=game_keyboard)
 
 # Обработчик команды /stop и кнопки "⛔ Стоп"
 @router.message(lambda message: message.text == "⛔ Стоп" or message.text == "/stop")
 async def stop_game(message: types.Message, state: FSMContext):
     logging.info("Game stopped")
-    await state.update_data(in_game=False)
-    await message.answer("Игра остановлена. Нажми кнопку ниже, чтобы начать заново.", reply_markup=start_keyboard)
+    user_data = await state.get_data()
+    points = user_data.get('points', 0)
+    await state.update_data(in_game=False, points=0)
+    await message.answer(f"Игра остановлена. Ты набрал {points} очков. Нажми кнопку ниже, чтобы начать заново.", reply_markup=start_keyboard)
 
 # Обработчик кнопки "🚀 Начать игру"
 @router.message(lambda message: message.text == "🚀 Начать игру")
 async def restart_game(message: types.Message, state: FSMContext):
     logging.info("Game restarted")
-    await state.update_data(in_game=True)
+    await state.update_data(in_game=True, points=0)
     await message.answer("Игра началась! Выбирай:", reply_markup=game_keyboard)
 
 # Обработчики кнопок "Правда" и "Действие"
 @router.message(lambda message: message.text == "🎭 Правда")
-async def truth_handler(message: types.Message):
+async def truth_handler(message: types.Message, state: FSMContext):
     logging.info("Truth selected")
-    await message.answer(random.choice(truths))
+    user_data = await state.get_data()
+    points = user_data.get('points', 0) + 1
+    await state.update_data(points=points)
+    await message.answer(f"{random.choice(truths)}\n\nТы получил 1 очко! Всего очков: {points}")
 
 @router.message(lambda message: message.text == "💪 Действие")
-async def dare_handler(message: types.Message):
+async def dare_handler(message: types.Message, state: FSMContext):
     logging.info("Dare selected")
-    await message.answer(random.choice(dares))
+    user_data = await state.get_data()
+    points = user_data.get('points', 0) + 1
+    await state.update_data(points=points)
+    await message.answer(f"{random.choice(dares)}\n\nТы получил 1 очко! Всего очков: {points}")
 
 # Запуск бота
 async def main():
@@ -206,6 +214,7 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())
+
 
     file.write("# p-d\n")
 import subprocess
