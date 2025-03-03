@@ -5,6 +5,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 import asyncio
 import logging
 import random
+import json
 
 TOKEN = "7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ"
 
@@ -12,6 +13,22 @@ bot = Bot(token=TOKEN)
 storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
 router = Router()
+
+# Файл для хранения статистики
+STATS_FILE = "stats.json"
+
+def load_stats():
+    try:
+        with open(STATS_FILE, "r") as file:
+            return json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+def save_stats(stats):
+    with open(STATS_FILE, "w") as file:
+        json.dump(stats, file, indent=4)
+
+stats = load_stats()
 
 # Список вопросов и действий
 truths = ["Какая твоя самая большая тайна?",
@@ -99,7 +116,8 @@ truths = ["Какая твоя самая большая тайна?",
     "Ты когда-нибудь скрывал правду, чтобы не разочаровать кого-то?",
     "Ты когда-нибудь лгал, чтобы избежать наказания?",
     "Ты когда-нибудь расставался с человеком, хотя не хотел этого делать?",
-    "Ты когда-нибудь чувствовал, что твою доброту воспринимают как слабость?"]
+    "Ты когда-нибудь чувствовал, что твою доброту воспринимают как слабость?",]
+
 dares = ["Сделай 10 приседаний прямо сейчас!",
     "Отправь голосовое сообщение с комплиментом любому участнику чата.",
     "Скажи первую фразу, которая придет в голову, и не объясняй почему.",
@@ -137,13 +155,14 @@ dares = ["Сделай 10 приседаний прямо сейчас!",
     "Напиши 5 вещей, которые тебе нравятся.",
     "Назови всех своих учителей по имени.",
     "Придумай способ, как провести день в парке.",
-    "Пожалуйста, представь себя супергероем и покажи своё главное суперспособность."]
+    "Пожалуйста, представь себя супергероем и покажи своё главное суперспособность.",]
 
 # Меню команд
 async def set_commands(bot: Bot):
     commands = [
         types.BotCommand(command="start", description="Начать игру"),
-        types.BotCommand(command="stop", description="Остановить игру")
+        types.BotCommand(command="stop", description="Остановить игру"),
+        types.BotCommand(command="stat", description="Статистика очков")
     ]
     await bot.set_my_commands(commands)
 
@@ -156,7 +175,7 @@ start_keyboard = types.ReplyKeyboardMarkup(
 game_keyboard = types.ReplyKeyboardMarkup(
     keyboard=[
         [types.KeyboardButton(text="🎭 Правда"), types.KeyboardButton(text="💪 Действие")],
-        [types.KeyboardButton(text="⛔ Стоп")]
+        [types.KeyboardButton(text="⛔ Стоп"), types.KeyboardButton(text="📊 Статистика")]
     ],
     resize_keyboard=True
 )
@@ -165,45 +184,52 @@ game_keyboard = types.ReplyKeyboardMarkup(
 @router.message(Command("start"))
 async def send_welcome(message: types.Message, state: FSMContext):
     logging.info("Received /start command")
-    user_data = await state.get_data()
-    if user_data.get('in_game', False):
-        await message.answer("Ты уже играешь! Выбирай:", reply_markup=game_keyboard)
-    else:
-        await state.update_data(in_game=True, points=0)
-        await message.answer("Привет! Давай сыграем в 'Правду или Действие'! Выбирай:", reply_markup=game_keyboard)
+    user_id = str(message.from_user.id)
+    if user_id not in stats:
+        stats[user_id] = 0
+    await state.update_data(in_game=True)
+    await message.answer("Привет! Давай сыграем в 'Правду или Действие'! Выбирай:", reply_markup=game_keyboard)
 
 # Обработчик команды /stop и кнопки "⛔ Стоп"
 @router.message(lambda message: message.text == "⛔ Стоп" or message.text == "/stop")
 async def stop_game(message: types.Message, state: FSMContext):
     logging.info("Game stopped")
-    user_data = await state.get_data()
-    points = user_data.get('points', 0)
-    await state.update_data(in_game=False, points=0)
+    user_id = str(message.from_user.id)
+    points = stats.get(user_id, 0)
+    await state.update_data(in_game=False)
+    save_stats(stats)
     await message.answer(f"Игра остановлена. Ты набрал {points} очков. Нажми кнопку ниже, чтобы начать заново.", reply_markup=start_keyboard)
+
+# Обработчик команды /stat и кнопки "📊 Статистика"
+@router.message(lambda message: message.text == "📊 Статистика" or message.text == "/stat")
+async def show_stats(message: types.Message, state: FSMContext):
+    user_id = str(message.from_user.id)
+    points = stats.get(user_id, 0)
+    await message.answer(f"📊 Твоя статистика: {points} очков")
 
 # Обработчик кнопки "🚀 Начать игру"
 @router.message(lambda message: message.text == "🚀 Начать игру")
 async def restart_game(message: types.Message, state: FSMContext):
     logging.info("Game restarted")
-    await state.update_data(in_game=True, points=0)
+    await state.update_data(in_game=True)
     await message.answer("Игра началась! Выбирай:", reply_markup=game_keyboard)
 
 # Обработчики кнопок "Правда" и "Действие"
 @router.message(lambda message: message.text == "🎭 Правда")
 async def truth_handler(message: types.Message, state: FSMContext):
     logging.info("Truth selected")
-    user_data = await state.get_data()
-    points = user_data.get('points', 0) + 1
-    await state.update_data(points=points)
-    await message.answer(f"{random.choice(truths)}\n\nТы получил 1 очко! Всего очков: {points}")
+    user_id = str(message.from_user.id)
+    stats[user_id] = stats.get(user_id, 0) + 1
+    save_stats(stats)
+    await message.answer(f"{random.choice(truths)}\n\nТы получил 1 очко! Всего очков: {stats[user_id]}")
 
 @router.message(lambda message: message.text == "💪 Действие")
 async def dare_handler(message: types.Message, state: FSMContext):
     logging.info("Dare selected")
-    user_data = await state.get_data()
-    points = user_data.get('points', 0) + 1
-    await state.update_data(points=points)
-    await message.answer(f"{random.choice(dares)}\n\nТы получил 1 очко! Всего очков: {points}")
+    user_id = str(message.from_user.id)
+    stats[user_id] = stats.get(user_id, 0) + 1
+    save_stats(stats)
+    await message.answer(f"{random.choice(dares)}\n\nТы получил 1 очко! Всего очков: {stats[user_id]}")
 
 # Запуск бота
 async def main():
@@ -214,6 +240,7 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())
+
 
 
     file.write("# p-d\n")
