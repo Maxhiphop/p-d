@@ -6,7 +6,7 @@ import asyncio
 import logging
 import random
 
-TOKEN = "YOUR_BOT_TOKEN"
+TOKEN = "7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ"
 
 bot = Bot(token=TOKEN)
 storage = MemoryStorage()
