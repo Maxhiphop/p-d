@@ -176,25 +176,30 @@ game_keyboard = types.ReplyKeyboardMarkup(
 # Обработчик команды /start
 @router.message(Command("start"))
 async def send_welcome(message: types.Message):
+    logging.info("Received /start command")
     await message.answer("Привет! Давай сыграем в 'Правду или Действие'! Выбирай:", reply_markup=game_keyboard)
 
 # Обработчик команды /stop и кнопки "⛔ Стоп"
 @router.message(lambda message: message.text == "⛔ Стоп" or message.text == "/stop")
 async def stop_game(message: types.Message):
+    logging.info("Game stopped")
     await message.answer("Игра остановлена. Нажми кнопку ниже, чтобы начать заново.", reply_markup=start_keyboard)
 
 # Обработчик кнопки "🚀 Начать игру"
 @router.message(lambda message: message.text == "🚀 Начать игру")
 async def restart_game(message: types.Message):
+    logging.info("Game restarted")
     await message.answer("Игра началась! Выбирай:", reply_markup=game_keyboard)
 
 # Обработчики кнопок "Правда" и "Действие"
 @router.message(lambda message: message.text == "🎭 Правда")
 async def truth_handler(message: types.Message):
+    logging.info("Truth selected")
     await message.answer(random.choice(truths))
 
 @router.message(lambda message: message.text == "💪 Действие")
 async def dare_handler(message: types.Message):
+    logging.info("Dare selected")
     await message.answer(random.choice(dares))
 
 # Регистрация роутера в диспетчере
@@ -203,7 +208,8 @@ dp.include_router(router)
 # Запуск бота
 async def main():
     await set_commands(bot)  # Устанавливаем команды /start и /stop
-    await dp.start_polling(bot)
+    logging.info("Starting bot...")
+    await dp.start_polling(bot)  # Запускаем бота
 
 if __name__ == '__main__':
     asyncio.run(main())
