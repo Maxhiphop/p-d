@@ -33,7 +33,7 @@ stats = load_stats()
 
 # Списки вопросов и действий
 truths = [
-      "Какая твоя самая большая тайна?",
+     "Какая твоя самая большая тайна?",
     "Если бы ты мог изменить одно событие в своей жизни, что бы это было?",
     "Какой самый неловкий момент у тебя был?",
     "Было ли у тебя влюбленность в кого-то из этой группы?",
@@ -249,9 +249,12 @@ async def truth_handler(message: types.Message, state: FSMContext):
     try:
         logging.info("Truth selected")
         user_id = str(message.from_user.id)
-        stats[user_id]["points"] = stats.get(user_id, {}).get("points", 0) + 1
-        save_stats(stats)
-        await message.answer(f"{random.choice(truths)}\n\nТы получил 1 очко! Всего очков: {stats[user_id]['points']}")
+        if stats.get(user_id, {}).get("in_game", False):
+            stats[user_id]["points"] += 1
+            save_stats(stats)
+            await message.answer(f"{random.choice(truths)}\n\nТы получил 1 очко! Всего очков: {stats[user_id]['points']}")
+        else:
+            await message.answer("Для начала игры нажми '🚀 Начать игру'.")
     except Exception as e:
         logging.error(f"Ошибка при выборе 'Правда': {e}")
         logging.error(traceback.format_exc())
@@ -261,9 +264,12 @@ async def dare_handler(message: types.Message, state: FSMContext):
     try:
         logging.info("Dare selected")
         user_id = str(message.from_user.id)
-        stats[user_id]["points"] = stats.get(user_id, {}).get("points", 0) + 1
-        save_stats(stats)
-        await message.answer(f"{random.choice(dares)}\n\nТы получил 1 очко! Всего очков: {stats[user_id]['points']}")
+        if stats.get(user_id, {}).get("in_game", False):
+            stats[user_id]["points"] += 1
+            save_stats(stats)
+            await message.answer(f"{random.choice(dares)}\n\nТы получил 1 очко! Всего очков: {stats[user_id]['points']}")
+        else:
+            await message.answer("Для начала игры нажми '🚀 Начать игру'.")
     except Exception as e:
         logging.error(f"Ошибка при выборе 'Действие': {e}")
         logging.error(traceback.format_exc())
@@ -282,7 +288,6 @@ async def main():
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     asyncio.run(main())
-
 
 
     file.write("# p-d\n")
