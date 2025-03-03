@@ -6,6 +6,7 @@ import asyncio
 import logging
 import random
 import json
+import traceback
 
 TOKEN = "7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ"
 
@@ -32,7 +33,7 @@ stats = load_stats()
 
 # Списки вопросов и действий
 truths = [
-    "Какая твоя самая большая тайна?",
+      "Какая твоя самая большая тайна?",
     "Если бы ты мог изменить одно событие в своей жизни, что бы это было?",
     "Какой самый неловкий момент у тебя был?",
     "Было ли у тебя влюбленность в кого-то из этой группы?",
@@ -118,6 +119,7 @@ truths = [
     "Ты когда-нибудь лгал, чтобы избежать наказания?",
     "Ты когда-нибудь расставался с человеком, хотя не хотел этого делать?",
     "Ты когда-нибудь чувствовал, что твою доброту воспринимают как слабость?"
+    # Добавьте остальные вопросы...
 ]
 
 dares = [
@@ -159,6 +161,7 @@ dares = [
     "Назови всех своих учителей по имени.",
     "Придумай способ, как провести день в парке.",
     "Пожалуйста, представь себя супергероем и покажи своё главное суперспособность." 
+    # Добавьте остальные действия...
 ]
 
 # Меню команд
@@ -187,68 +190,97 @@ game_keyboard = types.ReplyKeyboardMarkup(
 # Обработчик команды /start
 @router.message(Command("start"))
 async def send_welcome(message: types.Message, state: FSMContext):
-    logging.info("Received /start command")
-    user_id = str(message.from_user.id)
-    if user_id not in stats:
-        stats[user_id] = {"points": 0, "in_game": False}
-    await state.update_data(in_game=True)
-    stats[user_id]["in_game"] = True
-    save_stats(stats)
-    await message.answer("Привет! Давай сыграем в 'Правду или Действие'! Выбирай:", reply_markup=game_keyboard)
+    try:
+        logging.info("Received /start command")
+        user_id = str(message.from_user.id)
+        if user_id not in stats:
+            stats[user_id] = {"points": 0, "in_game": False}
+        await state.update_data(in_game=True)
+        stats[user_id]["in_game"] = True
+        save_stats(stats)
+        await message.answer("Привет! Давай сыграем в 'Правду или Действие'! Выбирай:", reply_markup=game_keyboard)
+    except Exception as e:
+        logging.error(f"Ошибка при обработке /start: {e}")
+        logging.error(traceback.format_exc())
 
 # Обработчик команды /stop и кнопки "⛔ Стоп"
 @router.message(lambda message: message.text == "⛔ Стоп" or message.text == "/stop")
 async def stop_game(message: types.Message, state: FSMContext):
-    logging.info("Game stopped")
-    user_id = str(message.from_user.id)
-    points = stats.get(user_id, {}).get("points", 0)
-    await state.update_data(in_game=False)
-    stats[user_id]["in_game"] = False
-    save_stats(stats)
-    await message.answer(f"Игра остановлена. Ты набрал {points} очков. Нажми кнопку ниже, чтобы начать заново.", reply_markup=start_keyboard)
+    try:
+        logging.info("Game stopped")
+        user_id = str(message.from_user.id)
+        points = stats.get(user_id, {}).get("points", 0)
+        await state.update_data(in_game=False)
+        stats[user_id]["in_game"] = False
+        save_stats(stats)
+        await message.answer(f"Игра остановлена. Ты набрал {points} очков. Нажми кнопку ниже, чтобы начать заново.", reply_markup=start_keyboard)
+    except Exception as e:
+        logging.error(f"Ошибка при обработке /stop: {e}")
+        logging.error(traceback.format_exc())
 
 # Обработчик команды /stat и кнопки "📊 Статистика"
 @router.message(lambda message: message.text == "📊 Статистика" or message.text == "/stat")
 async def show_stats(message: types.Message, state: FSMContext):
-    user_id = str(message.from_user.id)
-    points = stats.get(user_id, {}).get("points", 0)
-    await message.answer(f"📊 Твоя статистика: {points} очков")
+    try:
+        user_id = str(message.from_user.id)
+        points = stats.get(user_id, {}).get("points", 0)
+        await message.answer(f"📊 Твоя статистика: {points} очков")
+    except Exception as e:
+        logging.error(f"Ошибка при обработке статистики: {e}")
+        logging.error(traceback.format_exc())
 
 # Обработчик кнопки "🚀 Начать игру"
 @router.message(lambda message: message.text == "🚀 Начать игру")
 async def restart_game(message: types.Message, state: FSMContext):
-    logging.info("Game restarted")
-    user_id = str(message.from_user.id)
-    stats[user_id]["in_game"] = True
-    save_stats(stats)
-    await state.update_data(in_game=True)
-    await message.answer("Игра началась! Выбирай:", reply_markup=game_keyboard)
+    try:
+        logging.info("Game restarted")
+        user_id = str(message.from_user.id)
+        stats[user_id]["in_game"] = True
+        save_stats(stats)
+        await state.update_data(in_game=True)
+        await message.answer("Игра началась! Выбирай:", reply_markup=game_keyboard)
+    except Exception as e:
+        logging.error(f"Ошибка при перезапуске игры: {e}")
+        logging.error(traceback.format_exc())
 
 # Обработчики кнопок "Правда" и "Действие"
 @router.message(lambda message: message.text == "🎭 Правда")
 async def truth_handler(message: types.Message, state: FSMContext):
-    logging.info("Truth selected")
-    user_id = str(message.from_user.id)
-    stats[user_id]["points"] = stats.get(user_id, {}).get("points", 0) + 1
-    save_stats(stats)
-    await message.answer(f"{random.choice(truths)}\n\nТы получил 1 очко! Всего очков: {stats[user_id]['points']}")
+    try:
+        logging.info("Truth selected")
+        user_id = str(message.from_user.id)
+        stats[user_id]["points"] = stats.get(user_id, {}).get("points", 0) + 1
+        save_stats(stats)
+        await message.answer(f"{random.choice(truths)}\n\nТы получил 1 очко! Всего очков: {stats[user_id]['points']}")
+    except Exception as e:
+        logging.error(f"Ошибка при выборе 'Правда': {e}")
+        logging.error(traceback.format_exc())
 
 @router.message(lambda message: message.text == "💪 Действие")
 async def dare_handler(message: types.Message, state: FSMContext):
-    logging.info("Dare selected")
-    user_id = str(message.from_user.id)
-    stats[user_id]["points"] = stats.get(user_id, {}).get("points", 0) + 1
-    save_stats(stats)
-    await message.answer(f"{random.choice(dares)}\n\nТы получил 1 очко! Всего очков: {stats[user_id]['points']}")
+    try:
+        logging.info("Dare selected")
+        user_id = str(message.from_user.id)
+        stats[user_id]["points"] = stats.get(user_id, {}).get("points", 0) + 1
+        save_stats(stats)
+        await message.answer(f"{random.choice(dares)}\n\nТы получил 1 очко! Всего очков: {stats[user_id]['points']}")
+    except Exception as e:
+        logging.error(f"Ошибка при выборе 'Действие': {e}")
+        logging.error(traceback.format_exc())
 
 # Запуск бота
 async def main():
-    await set_commands(bot)
-    logging.info("Starting bot...")
-    dp.include_router(router)
-    await dp.start_polling(bot)
+    try:
+        await set_commands(bot)
+        logging.info("Starting bot...")
+        dp.include_router(router)
+        await dp.start_polling(bot)
+    except Exception as e:
+        logging.error(f"Ошибка при запуске бота: {e}")
+        logging.error(traceback.format_exc())
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
     asyncio.run(main())
 
 
