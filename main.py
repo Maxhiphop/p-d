@@ -5,6 +5,8 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram import Router
 from aiogram.filters import Command
+from aiogram.fsm.state import State
+from aiogram.fsm.context import FSMContext
 
 # Вставь сюда свой токен от BotFather
 API_TOKEN = "7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ"
@@ -150,6 +152,10 @@ dares = [
 ]
 
 
+# Статус игры для каждого пользователя
+class GameState(State):
+    in_game = False
+
 # Меню команд для Telegram
 async def set_commands(bot: Bot):
     commands = [
@@ -175,30 +181,37 @@ game_keyboard = types.ReplyKeyboardMarkup(
 
 # Обработчик команды /start
 @router.message(Command("start"))
-async def send_welcome(message: types.Message):
+async def send_welcome(message: types.Message, state: FSMContext):
     logging.info("Received /start command")
-    await message.answer("Привет! Давай сыграем в 'Правду или Действие'! Выбирай:", reply_markup=game_keyboard)
+    current_state = await state.get_data()
+    if current_state.get('in_game', False):
+        await message.answer("Ты уже играешь! Выбирай:", reply_markup=game_keyboard)
+    else:
+        await state.update_data(in_game=True)
+        await message.answer("Привет! Давай сыграем в 'Правду или Действие'! Выбирай:", reply_markup=game_keyboard)
 
 # Обработчик команды /stop и кнопки "⛔ Стоп"
 @router.message(lambda message: message.text == "⛔ Стоп" or message.text == "/stop")
-async def stop_game(message: types.Message):
+async def stop_game(message: types.Message, state: FSMContext):
     logging.info("Game stopped")
+    await state.update_data(in_game=False)  # Сбрасываем статус игры
     await message.answer("Игра остановлена. Нажми кнопку ниже, чтобы начать заново.", reply_markup=start_keyboard)
 
 # Обработчик кнопки "🚀 Начать игру"
 @router.message(lambda message: message.text == "🚀 Начать игру")
-async def restart_game(message: types.Message):
+async def restart_game(message: types.Message, state: FSMContext):
     logging.info("Game restarted")
+    await state.update_data(in_game=True)  # Устанавливаем новый статус игры
     await message.answer("Игра началась! Выбирай:", reply_markup=game_keyboard)
 
 # Обработчики кнопок "Правда" и "Действие"
 @router.message(lambda message: message.text == "🎭 Правда")
-async def truth_handler(message: types.Message):
+async def truth_handler(message: types.Message, state: FSMContext):
     logging.info("Truth selected")
     await message.answer(random.choice(truths))
 
 @router.message(lambda message: message.text == "💪 Действие")
-async def dare_handler(message: types.Message):
+async def dare_handler(message: types.Message, state: FSMContext):
     logging.info("Dare selected")
     await message.answer(random.choice(dares))
 
@@ -213,7 +226,6 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())
-
 with open("README.md", "a") as file:
     file.write("# p-d\n")
 import subprocess
