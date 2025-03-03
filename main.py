@@ -237,9 +237,15 @@ async def truth_handler(message: types.Message, state: FSMContext):
 async def dare_handler(message: types.Message, state: FSMContext):
     logging.info("Dare selected")
     user_id = str(message.from_user.id)
-    stats[user_id]["points"] = stats.get(user_id, {}).get("points", 0) + 1
+    
+    # Ensure the user_id exists in stats, if not initialize it
+    if user_id not in stats:
+        stats[user_id] = {"points": 0}
+    
+    stats[user_id]["points"] += 1
     save_stats(stats)
     await message.answer(f"{random.choice(dares)}\n\nТы получил 1 очко! Всего очков: {stats[user_id]['points']}")
+
 
 # Запуск бота
 async def main():
