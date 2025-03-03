@@ -6,6 +6,7 @@ import asyncio
 import logging
 import random
 import json
+import aiofiles
 
 TOKEN = "7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ"
 
@@ -17,18 +18,19 @@ router = Router()
 # Файл для хранения статистики
 STATS_FILE = "stats.json"
 
-def load_stats():
+# Асинхронная загрузка статистики
+async def load_stats():
     try:
-        with open(STATS_FILE, "r") as file:
-            return json.load(file)
+        async with aiofiles.open(STATS_FILE, "r") as file:
+            content = await file.read()
+            return json.loads(content) if content else {}
     except (FileNotFoundError, json.JSONDecodeError):
         return {}
 
-def save_stats(stats):
-    with open(STATS_FILE, "w") as file:
-        json.dump(stats, file, indent=4)
-
-stats = load_stats()
+# Асинхронное сохранение статистики
+async def save_stats(stats):
+    async with aiofiles.open(STATS_FILE, "w") as file:
+        await file.write(json.dumps(stats, indent=4))
 
 # Списки вопросов и действий
 truths = [
@@ -125,6 +127,8 @@ dares = [
     # Добавьте другие действия...
 ]
 
+
+
 # Меню команд
 async def set_commands(bot: Bot):
     commands = [
@@ -153,11 +157,12 @@ game_keyboard = types.ReplyKeyboardMarkup(
 async def send_welcome(message: types.Message, state: FSMContext):
     logging.info("Received /start command")
     user_id = str(message.from_user.id)
+    stats = await load_stats()  # Асинхронно загружаем статистику
     if user_id not in stats:
         stats[user_id] = {"points": 0, "in_game": False}
-    await state.update_data(in_game=True)
     stats[user_id]["in_game"] = True
-    save_stats(stats)
+    await save_stats(stats)  # Асинхронно сохраняем статистику
+    await state.update_data(in_game=True)
     await message.answer("Привет! Давай сыграем в 'Правду или Действие'! Выбирай:", reply_markup=game_keyboard)
 
 # Обработчик команды /stop и кнопки "⛔ Стоп"
@@ -165,16 +170,18 @@ async def send_welcome(message: types.Message, state: FSMContext):
 async def stop_game(message: types.Message, state: FSMContext):
     logging.info("Game stopped")
     user_id = str(message.from_user.id)
+    stats = await load_stats()
     points = stats.get(user_id, {}).get("points", 0)
     await state.update_data(in_game=False)
     stats[user_id]["in_game"] = False
-    save_stats(stats)
+    await save_stats(stats)  # Асинхронно сохраняем статистику
     await message.answer(f"Игра остановлена. Ты набрал {points} очков. Нажми кнопку ниже, чтобы начать заново.", reply_markup=start_keyboard)
 
 # Обработчик команды /stat и кнопки "📊 Статистика"
 @router.message(lambda message: message.text == "📊 Статистика" or message.text == "/stat")
 async def show_stats(message: types.Message, state: FSMContext):
     user_id = str(message.from_user.id)
+    stats = await load_stats()
     points = stats.get(user_id, {}).get("points", 0)
     await message.answer(f"📊 Твоя статистика: {points} очков")
 
@@ -183,10 +190,11 @@ async def show_stats(message: types.Message, state: FSMContext):
 async def restart_game(message: types.Message, state: FSMContext):
     logging.info("Game restarted")
     user_id = str(message.from_user.id)
+    stats = await load_stats()
     if user_id not in stats:
         stats[user_id] = {"points": 0, "in_game": True}
     stats[user_id]["in_game"] = True
-    save_stats(stats)
+    await save_stats(stats)  # Асинхронно сохраняем статистику
     await state.update_data(in_game=True)
     await message.answer("Игра началась! Выбирай:", reply_markup=game_keyboard)
 
@@ -195,26 +203,22 @@ async def restart_game(message: types.Message, state: FSMContext):
 async def truth_handler(message: types.Message, state: FSMContext):
     logging.info("Truth selected")
     user_id = str(message.from_user.id)
-    
-    # Ensure the user_id exists in stats
+    stats = await load_stats()
     if user_id not in stats:
         stats[user_id] = {"points": 0, "in_game": False}
-    
     stats[user_id]["points"] += 1
-    save_stats(stats)
+    await save_stats(stats)  # Асинхронно сохраняем статистику
     await message.answer(f"{random.choice(truths)}\n\nТы получил 1 очко! Всего очков: {stats[user_id]['points']}")
 
 @router.message(lambda message: message.text == "💪 Действие")
 async def dare_handler(message: types.Message, state: FSMContext):
     logging.info("Dare selected")
     user_id = str(message.from_user.id)
-    
-    # Ensure the user_id exists in stats
+    stats = await load_stats()
     if user_id not in stats:
         stats[user_id] = {"points": 0, "in_game": False}
-    
     stats[user_id]["points"] += 1
-    save_stats(stats)
+    await save_stats(stats)  # Асинхронно сохраняем статистику
     await message.answer(f"{random.choice(dares)}\n\nТы получил 1 очко! Всего очков: {stats[user_id]['points']}")
 
 # Запуск бота
@@ -225,6 +229,7 @@ async def main():
     await dp.start_polling(bot)
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
     asyncio.run(main())
 
 
