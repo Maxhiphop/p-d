@@ -249,7 +249,6 @@ dares = [
     # Добавьте другие действия...
 ]
 
-
 def get_random_item(lst):
     return random.choice(lst)
 
@@ -263,10 +262,10 @@ async def send_question_or_dare(message: types.Message, mode="truth"):
 
 @dp.message(Command("start"))
 async def cmd_start(message: Message):
-    # Create keyboard buttons
-    truth_button = KeyboardButton("Truth")
-    dare_button = KeyboardButton("Dare")
-    leaderboard_button = KeyboardButton("Leaderboard")
+    # Create keyboard buttons with keyword arguments
+    truth_button = KeyboardButton(text="Truth")
+    dare_button = KeyboardButton(text="Dare")
+    leaderboard_button = KeyboardButton(text="Leaderboard")
     
     # Create keyboard with buttons
     keyboard = ReplyKeyboardMarkup(resize_keyboard=True).add(truth_button, dare_button, leaderboard_button)
