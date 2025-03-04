@@ -259,15 +259,6 @@ async def send_question_or_dare(message: types.Message, mode="truth"):
         dare = get_random_item(dares)
         await message.answer(f"Твой вызов: {dare}")
 
-@dp.message_handler(Command("start"))
-async def cmd_start(message: types.Message):
-    await message.answer("Привет! Я твой бот для игры \"Правда или действие\". Напиши /truth или /dare, чтобы начать!")
-
-@dp.message_handler(Text(equals=["/truth", "/dare"]))
-async def handle_truth_or_dare(message: types.Message):
-    mode = message.text.strip("/")
-    await send_question_or_dare(message, mode)
-
 # Update leaderboard
 def update_leaderboard(user_id, username):
     cursor.execute("SELECT score FROM leaders WHERE user_id = ?", (user_id,))
@@ -284,15 +275,16 @@ def get_leaderboard():
     leaders = cursor.fetchall()
     return "\n".join([f"{i+1}. {user[0]} - {user[1]} points" for i, user in enumerate(leaders)])
 
-# Command handlers
-@dp.message(Command("start"))
-async def start(message: Message):
+# Command handler for start
+@dp.message_handler(Command("start"))
+async def cmd_start(message: Message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     buttons = ["Truth", "Dare", "Leaderboard"]
     keyboard.add(*buttons)
     await message.answer("Welcome! Choose: Truth or Dare.", reply_markup=keyboard)
 
-@dp.message(F.text.in_(["Truth", "Dare", "Leaderboard"]))
+# Handle buttons
+@dp.message_handler(Text(equals=["Truth", "Dare", "Leaderboard"]))
 async def handle_buttons(message: Message):
     if message.text == "Truth":
         await message.answer(random.choice(truths))
@@ -306,7 +298,10 @@ async def handle_buttons(message: Message):
 
 # Run the bot
 async def main():
-    await dp.start_polling(bot)
+    try:
+        await dp.start_polling(bot)
+    finally:
+        conn.close()
 
 if __name__ == '__main__':
     asyncio.run(main())
