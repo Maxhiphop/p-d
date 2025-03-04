@@ -254,6 +254,7 @@ dares = [
 
 
 
+
 # Асинхронная загрузка статистики
 async def load_stats():
     try:
