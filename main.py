@@ -1,27 +1,27 @@
-from aiogram import Bot, Dispatcher, types
-from aiogram.types import Message
-from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.fsm.context import FSMContext
-from aiogram.utils import executor
+import asyncio
 import logging
 import json
 import random
-
+import aiofiles
+from aiogram import Bot, Dispatcher, types, Router, F
+from aiogram.types import Message
+from aiogram.fsm.context import FSMContext
+from aiogram.filters import Command
 
 TOKEN = "7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ"
 
 bot = Bot(token=TOKEN)
-storage = MemoryStorage()
-dp = Dispatcher(storage=storage)
+dp = Dispatcher()
 router = Router()
+dp.include_router(router)
 
-# Файл для хранения статистики
+# Файл статистики
 STATS_FILE = "stats.json"
 
 # Асинхронная загрузка статистики
 async def load_stats():
     try:
-        async with aiofiles.open(STATS_FILE, "r") as file:
+        async with aiofiles.open(STATS_FILE, "r", encoding="utf-8") as file:
             content = await file.read()
             return json.loads(content) if content else {}
     except (FileNotFoundError, json.JSONDecodeError):
@@ -29,8 +29,8 @@ async def load_stats():
 
 # Асинхронное сохранение статистики
 async def save_stats(stats):
-    async with aiofiles.open(STATS_FILE, "w") as file:
-        await file.write(json.dumps(stats, indent=4))
+    async with aiofiles.open(STATS_FILE, "w", encoding="utf-8") as file:
+        await file.write(json.dumps(stats, indent=4, ensure_ascii=False))
 
 # Списки вопросов и действий
 truths = [
@@ -253,74 +253,61 @@ dares = [
 
 
 
-# Файл статистики
-STATS_FILE = "stats.json"
-
-def load_stats():
-    try:
-        with open(STATS_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return {}
-
-def save_stats(stats):
-    with open(STATS_FILE, "w", encoding="utf-8") as f:
-        json.dump(stats, f, indent=4)
-
-@dp.message(Command("start"))
+@router.message(Command("start"))
 async def start_game(message: Message, state: FSMContext):
     user_id = str(message.from_user.id)
-    stats = load_stats()
+    stats = await load_stats()
+    
     if user_id not in stats:
         stats[user_id] = {"points": 0, "in_game": True}
     else:
         stats[user_id]["in_game"] = True
-    save_stats(stats)
+
+    await save_stats(stats)
     await state.update_data(in_game=True)
     await message.answer("Привет! Давай сыграем в 'Правду или Действие'! Используй /truth или /dare")
 
-@dp.message(Command("stop"))
+@router.message(Command("stop"))
 async def stop_game(message: Message, state: FSMContext):
     user_id = str(message.from_user.id)
-    stats = load_stats()
+    stats = await load_stats()
+    
     if user_id in stats:
         stats[user_id]["in_game"] = False
-    save_stats(stats)
+
+    await save_stats(stats)
     await state.update_data(in_game=False)
     await message.answer("Игра остановлена. Возвращайся, когда захочешь!")
 
-@dp.message(Command("truth"))
+@router.message(Command("truth"))
 async def send_truth(message: Message):
     user_id = str(message.from_user.id)
-    stats = load_stats()
+    stats = await load_stats()
+    
     if stats.get(user_id, {}).get("in_game", False):
         question = random.choice(truths)
         await message.answer(f"🎭 Правда: {question}")
     else:
         await message.answer("Ты не в игре. Напиши /start, чтобы начать.")
 
-@dp.message(Command("dare"))
+@router.message(Command("dare"))
 async def send_dare(message: Message):
     user_id = str(message.from_user.id)
-    stats = load_stats()
+    stats = await load_stats()
+    
     if stats.get(user_id, {}).get("in_game", False):
-        action = random.choice(daress)
-        await message.answer(f"💪 Действие: {action}")
+        dare = random.choice(dares)
+        await message.answer(f"🎭 Действие: {dare}")
     else:
         await message.answer("Ты не в игре. Напиши /start, чтобы начать.")
 
-@dp.message(Command("stat"))
-async def show_stats(message: Message):
-    user_id = str(message.from_user.id)
-    stats = load_stats()
-    points = stats.get(user_id, {}).get("points", 0)
-    await message.answer(f"Твои очки: {points}")
-
 async def main():
+    logging.basicConfig(level=logging.INFO)
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
     file.write("# p-d\n")
