@@ -255,7 +255,6 @@ dares = [
 
 
 
-# Асинхронная загрузка статистики
 async def load_stats():
     try:
         async with aiofiles.open(STATS_FILE, "r", encoding="utf-8") as file:
@@ -271,7 +270,7 @@ async def save_stats(stats):
 
 # Команда /start для начала игры
 @router.message(Command("start"))
-async def start_game(message: Message, state: FSMContext):
+async def start_game(message: types.Message, state: FSMContext):  # Исправлено на types.Message
     user_id = str(message.from_user.id)
     stats = await load_stats()
     
@@ -286,7 +285,7 @@ async def start_game(message: Message, state: FSMContext):
 
 # Команда /stop для остановки игры
 @router.message(Command("stop"))
-async def stop_game(message: Message, state: FSMContext):
+async def stop_game(message: types.Message, state: FSMContext):  # Исправлено на types.Message
     user_id = str(message.from_user.id)
     stats = await load_stats()
     
@@ -299,7 +298,7 @@ async def stop_game(message: Message, state: FSMContext):
 
 # Команда /truth для получения вопроса "Правда"
 @router.message(Command("truth"))
-async def send_truth(message: Message):
+async def send_truth(message: types.Message):  # Исправлено на types.Message
     user_id = str(message.from_user.id)
     stats = await load_stats()
     
@@ -311,7 +310,7 @@ async def send_truth(message: Message):
 
 # Команда /dare для получения действия "Действие"
 @router.message(Command("dare"))
-async def send_dare(message: Message):
+async def send_dare(message: types.Message):  # Исправлено на types.Message
     user_id = str(message.from_user.id)
     stats = await load_stats()
     
@@ -328,8 +327,6 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-
 
     file.write("# p-d\n")
 import subprocess
