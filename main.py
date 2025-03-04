@@ -2,7 +2,8 @@ import asyncio
 import random
 import sqlite3
 from aiogram import Bot, Dispatcher, types
-from aiogram.filters import Command, Text  # Ensure this import is present
+from aiogram.filters import Command
+from aiogram.filters.text import Text  # Correct way to import Text filter in aiogram 3.x
 from aiogram.types import Message
 
 TOKEN = "7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ"
