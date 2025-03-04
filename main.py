@@ -3,7 +3,7 @@ import random
 import sqlite3
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
-from aiogram.types import Message
+from aiogram.types import Message, KeyboardButton, ReplyKeyboardMarkup
 
 TOKEN = "7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ"
 bot = Bot(token=TOKEN)
@@ -20,6 +20,7 @@ cursor.execute("""
     )
 """)
 conn.commit()
+
 
 # Списки вопросов и действий
 truths = [
@@ -262,7 +263,14 @@ async def send_question_or_dare(message: types.Message, mode="truth"):
 
 @dp.message(Command("start"))
 async def cmd_start(message: Message):
-    keyboard = types.ReplyKeyboardMarkup(keyboard=[["Truth", "Dare", "Leaderboard"]], resize_keyboard=True)
+    # Create keyboard buttons
+    truth_button = KeyboardButton("Truth")
+    dare_button = KeyboardButton("Dare")
+    leaderboard_button = KeyboardButton("Leaderboard")
+    
+    # Create keyboard with buttons
+    keyboard = ReplyKeyboardMarkup(resize_keyboard=True).add(truth_button, dare_button, leaderboard_button)
+    
     await message.answer("Welcome! Choose: Truth or Dare.", reply_markup=keyboard)
 
 @dp.message(lambda message: message.text in ["Truth", "Dare", "Leaderboard"])  # Use lambda to filter the message
@@ -299,7 +307,6 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())
-
     
     file.write("# p-d\n")
 import subprocess
