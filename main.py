@@ -2,6 +2,10 @@ import asyncio
 import random
 import sqlite3
 from aiogram import Bot, Dispatcher, types
+from aiogram import Bot, F
+from aiogram.types import Message
+from aiogram.dispatcher import Dispatcher
+
 
 TOKEN = "7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ"
 bot = Bot(token=TOKEN)
