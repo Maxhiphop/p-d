@@ -1,5 +1,6 @@
 import sqlite3
-ffrom aiogram import Bot, Dispatcher, types
+from aiogram import Bot, Dispatcher, types
+
 import asyncio
 import random
 
