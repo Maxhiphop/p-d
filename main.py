@@ -315,6 +315,12 @@ async def main():
     logging.basicConfig(level=logging.INFO)
     await dp.start_polling(bot, allowed_updates=types.Update.ALL)
 
+async def main():
+    logging.basicConfig(level=logging.INFO)
+    # Используем types.Update, чтобы разрешить все типы обновлений
+    await dp.start_polling(bot, allowed_updates=[types.Update])
+
+
 if __name__ == "__main__":
     asyncio.run(main())
 
