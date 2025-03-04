@@ -1,5 +1,6 @@
 import sqlite3
-from aiogram import Bot, Dispatcher, types, executor
+ffrom aiogram import Bot, Dispatcher, types
+import asyncio
 import random
 
 TOKEN = "YOUR_BOT_TOKEN"
@@ -284,9 +285,11 @@ async def handle_buttons(message: types.Message):
         leaderboard = get_leaderboard()
         await message.answer(f"Топ игроков:\n{leaderboard}")
 
-if __name__ == "__main__":
-    executor.start_polling(dp, skip_updates=True)
-    conn.close()
+   async def main():
+    await dp.start_polling(bot)
+
+asyncio.run(main())
+
 
 
     file.write("# p-d\n")
