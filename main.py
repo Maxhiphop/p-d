@@ -1,17 +1,15 @@
 import asyncio
 import random
 import sqlite3
-from aiogram import Bot, Dispatcher, types
-from aiogram import Bot, F
+from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message
-from aiogram.dispatcher import Dispatcher
-
+from aiogram.filters import Command
 
 TOKEN = "7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ"
 bot = Bot(token=TOKEN)
-dp = Dispatcher(bot)
+dp = Dispatcher()
 
-# Подключение к базе данных и создание таблицы
+# Setup database
 conn = sqlite3.connect("leaders.db")
 cursor = conn.cursor()
 cursor.execute("""
@@ -252,7 +250,7 @@ dares = [
 
 
 
-# Функция обновления счета пользователя
+# Update leaderboard
 def update_leaderboard(user_id, username):
     cursor.execute("SELECT score FROM leaders WHERE user_id = ?", (user_id,))
     result = cursor.fetchone()
@@ -262,38 +260,36 @@ def update_leaderboard(user_id, username):
         cursor.execute("INSERT INTO leaders (user_id, username, score) VALUES (?, ?, 1)", (user_id, username))
     conn.commit()
 
-# Функция получения таблицы лидеров
+# Get leaderboard
 def get_leaderboard():
     cursor.execute("SELECT username, score FROM leaders ORDER BY score DESC LIMIT 10")
     leaders = cursor.fetchall()
-    return "\n".join([f"{i+1}. {user[0]} - {user[1]} очков" for i, user in enumerate(leaders)])
+    return "\n".join([f"{i+1}. {user[0]} - {user[1]} points" for i, user in enumerate(leaders)])
 
-# Обработчик команды /start
-@dp.message_handler(commands=['start'])
-async def start(message: types.Message):
+# Command handlers
+@dp.message(Command("start"))
+async def start(message: Message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    buttons = ["Правда", "Действие", "Таблица лидеров"]
+    buttons = ["Truth", "Dare", "Leaderboard"]
     keyboard.add(*buttons)
-    await message.answer("Привет! Выбери: Правда или Действие.", reply_markup=keyboard)
+    await message.answer("Welcome! Choose: Truth or Dare.", reply_markup=keyboard)
 
-# Обработчик кнопок
-@dp.message_handler(lambda message: message.text in ["Правда", "Действие", "Таблица лидеров"])
-async def handle_buttons(message: types.Message):
-    if message.text == "Правда":
+@dp.message(F.text.in_(["Truth", "Dare", "Leaderboard"]))
+async def handle_buttons(message: Message):
+    if message.text == "Truth":
         await message.answer(random.choice(truths))
         update_leaderboard(message.from_user.id, message.from_user.username)
-    elif message.text == "Действие":
+    elif message.text == "Dare":
         await message.answer(random.choice(dares))
         update_leaderboard(message.from_user.id, message.from_user.username)
-    elif message.text == "Таблица лидеров":
+    elif message.text == "Leaderboard":
         leaderboard = get_leaderboard()
-        await message.answer(f"Топ игроков:\n{leaderboard}")
+        await message.answer(f"Top players:\n{leaderboard}")
 
-# Основная функция
+# Run the bot
 async def main():
     await dp.start_polling(bot)
 
-# Запуск бота
 if __name__ == '__main__':
     asyncio.run(main())
 
