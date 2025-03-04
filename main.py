@@ -268,7 +268,7 @@ async def cmd_start(message: Message):
     keyboard.add(*buttons)
     await message.answer("Welcome! Choose: Truth or Dare.", reply_markup=keyboard)
 
-@dp.message(Text(equals=["Truth", "Dare", "Leaderboard"]))
+@dp.message(lambda message: message.text in ["Truth", "Dare", "Leaderboard"])  # Use lambda to filter the message
 async def handle_buttons(message: types.Message):
     if message.text == "Truth":
         await message.answer(random.choice(truths))
@@ -302,6 +302,8 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())
+
+    
     file.write("# p-d\n")
 import subprocess
 
