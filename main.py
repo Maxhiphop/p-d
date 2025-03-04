@@ -1,7 +1,7 @@
 import asyncio
 import random
 import sqlite3
-from aiogram import Bot, Dispatcher, F
+from aiogram import Bot, Dispatcher, types
 from aiogram.types import Message
 from aiogram.filters import Command
 
@@ -292,7 +292,6 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())
-
 
     file.write("# p-d\n")
 import subprocess
