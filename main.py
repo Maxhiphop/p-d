@@ -1,13 +1,12 @@
-from aiogram.types import ReplyKeyboardRemove
+from aiogram import Bot, Dispatcher, types
+from aiogram.fsm.context import FSMContext
+from aiogram.filters import Command
+from aiogram import Router
 import random
 import json
 import aiofiles
 import logging
 import asyncio
-from aiogram import Bot, Dispatcher, types
-from aiogram.filters import Command
-from aiogram.fsm.context import FSMContext
-from aiogram import Router
 
 # Инициализация бота
 TOKEN = "7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ"
@@ -18,20 +17,6 @@ dp.include_router(router)
 
 # Файл статистики
 STATS_FILE = "stats.json"
-
-# Асинхронная загрузка статистики
-async def load_stats():
-    try:
-        async with aiofiles.open(STATS_FILE, "r", encoding="utf-8") as file:
-            content = await file.read()
-            return json.loads(content) if content else {}
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
-
-# Асинхронное сохранение статистики
-async def save_stats(stats):
-    async with aiofiles.open(STATS_FILE, "w", encoding="utf-8") as file:
-        await file.write(json.dumps(stats, indent=4, ensure_ascii=False))
 
 # Списки вопросов и действий
 truths = [
@@ -255,6 +240,9 @@ dares = [
 
 
 
+
+
+# Асинхронная загрузка статистики
 async def load_stats():
     try:
         async with aiofiles.open(STATS_FILE, "r", encoding="utf-8") as file:
@@ -323,7 +311,7 @@ async def send_dare(message: types.Message):  # Исправлено на types.
 # Основная асинхронная функция для запуска бота
 async def main():
     logging.basicConfig(level=logging.INFO)
-    await dp.start_polling(bot)
+    await dp.start_polling(bot, allowed_updates=types.Update.ALL)
 
 if __name__ == "__main__":
     asyncio.run(main())
