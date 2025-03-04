@@ -248,7 +248,25 @@ dares = [
     # Добавьте другие действия...
 ]
 
+def get_random_item(lst):
+    return random.choice(lst)
 
+async def send_question_or_dare(message: types.Message, mode="truth"):
+    if mode == "truth":
+        question = get_random_item(truths)
+        await message.answer(f"Твоя правда: {question}")
+    else:
+        dare = get_random_item(dares)
+        await message.answer(f"Твой вызов: {dare}")
+
+@dp.message_handler(Command("start"))
+async def cmd_start(message: types.Message):
+    await message.answer("Привет! Я твой бот для игры \"Правда или действие\". Напиши /truth или /dare, чтобы начать!")
+
+@dp.message_handler(Text(equals=["/truth", "/dare"]))
+async def handle_truth_or_dare(message: types.Message):
+    mode = message.text.strip("/")
+    await send_question_or_dare(message, mode)
 
 # Update leaderboard
 def update_leaderboard(user_id, username):
