@@ -289,7 +289,9 @@ async def handle_buttons(message: types.Message):
    async def main():
     await dp.start_polling(bot)
 
-asyncio.run(main())
+async def main():
+    # код функции здесь
+
 
 
 
