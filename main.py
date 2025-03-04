@@ -1,7 +1,7 @@
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import Message
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.dispatcher import FSMContext
+from aiogram.fsm.context import FSMContext
 from aiogram.utils import executor
 import logging
 import json
