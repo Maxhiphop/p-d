@@ -1,12 +1,12 @@
-from aiogram import Bot, Dispatcher, types, Router
-from aiogram.filters import Command
-from aiogram.fsm.context import FSMContext
-from aiogram.fsm.storage.memory import MemoryStorage
-import asyncio
+from aiogram import Bot, Dispatcher, types
+from aiogram.types import Message
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.dispatcher import FSMContext
+from aiogram.utils import executor
 import logging
-import random
 import json
-import aiofiles
+import random
+
 
 TOKEN = "7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ"
 
