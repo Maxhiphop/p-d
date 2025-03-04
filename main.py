@@ -253,118 +253,73 @@ dares = [
 
 
 
-# Меню команд
-async def set_commands(bot: Bot):
-    commands = [
-        types.BotCommand(command="start", description="Начать игру"),
-        types.BotCommand(command="stop", description="Остановить игру"),
-        types.BotCommand(command="stat", description="Статистика очков")
-    ]
-    await bot.set_my_commands(commands)
+# Файл статистики
+STATS_FILE = "stats.json"
 
-# Клавиатуры
-start_keyboard = types.ReplyKeyboardMarkup(
-    keyboard=[[types.KeyboardButton(text="🚀 Начать игру")]],
-    resize_keyboard=True
-)
+def load_stats():
+    try:
+        with open(STATS_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
 
-game_keyboard = types.ReplyKeyboardMarkup(
-    keyboard=[
-        [types.KeyboardButton(text="🎭 Правда"), types.KeyboardButton(text="💪 Действие")],
-        [types.KeyboardButton(text="⛔ Стоп"), types.KeyboardButton(text="📊 Статистика")]
-    ],
-    resize_keyboard=True
-)
+def save_stats(stats):
+    with open(STATS_FILE, "w", encoding="utf-8") as f:
+        json.dump(stats, f, indent=4)
 
-# Обработчик команды /start
-@router.message(Command("start"))
-async def send_welcome(message: types.Message, state: FSMContext):
-    logging.info("Received /start command")
+@dp.message(Command("start"))
+async def start_game(message: Message, state: FSMContext):
     user_id = str(message.from_user.id)
-    stats = await load_stats()  # Асинхронно загружаем статистику
-    if user_id not in stats:
-        stats[user_id] = {"points": 0, "in_game": False}
-    stats[user_id]["in_game"] = True
-    await save_stats(stats)  # Асинхронно сохраняем статистику
-    await state.update_data(in_game=True)
-    await message.answer("Привет! Давай сыграем в 'Правду или Действие'! Выбирай:", reply_markup=game_keyboard)
-
-# Обработчик команды /stop и кнопки "⛔ Стоп"
-@router.message(lambda message: message.text == "⛔ Стоп" or message.text == "/stop")
-async def stop_game(message: types.Message, state: FSMContext):
-    logging.info("Game stopped")
-    user_id = str(message.from_user.id)
-    stats = await load_stats()
-    points = stats.get(user_id, {}).get("points", 0)
-    await state.update_data(in_game=False)
-    stats[user_id]["in_game"] = False
-    await save_stats(stats)  # Асинхронно сохраняем статистику
-    await message.answer(f"Игра остановлена. Ты набрал {points} очков. Нажми кнопку ниже, чтобы начать заново.", reply_markup=start_keyboard)
-
-# Обработчик команды /stat и кнопки "📊 Статистика"
-@router.message(lambda message: message.text == "📊 Статистика" or message.text == "/stat")
-async def show_stats(message: types.Message, state: FSMContext):
-    user_id = str(message.from_user.id)
-    stats = await load_stats()
-    points = stats.get(user_id, {}).get("points", 0)
-    await message.answer(f"📊 Твоя статистика: {points} очков")
-
-# Обработчик кнопки "🚀 Начать игру"
-@router.message(lambda message: message.text == "🚀 Начать игру")
-async def restart_game(message: types.Message, state: FSMContext):
-    logging.info("Game restarted")
-    user_id = str(message.from_user.id)
-    stats = await load_stats()
+    stats = load_stats()
     if user_id not in stats:
         stats[user_id] = {"points": 0, "in_game": True}
-    stats[user_id]["in_game"] = True
-    await save_stats(stats)  # Асинхронно сохраняем статистику
+    else:
+        stats[user_id]["in_game"] = True
+    save_stats(stats)
     await state.update_data(in_game=True)
-    await message.answer("Игра началась! Выбирай:", reply_markup=game_keyboard)
+    await message.answer("Привет! Давай сыграем в 'Правду или Действие'! Используй /truth или /dare")
 
-# Обработчики кнопок "Правда" и "Действие"
-@router.message(lambda message: message.text == "🎭 Правда")
-async def truth_handler(message: types.Message, state: FSMContext):
-    logging.info("Truth selected")
+@dp.message(Command("stop"))
+async def stop_game(message: Message, state: FSMContext):
     user_id = str(message.from_user.id)
-    stats = await load_stats()
-    if user_id not in stats:
-        stats[user_id] = {"points": 0, "in_game": False}
-    stats[user_id]["points"] += 1
-    await save_stats(stats)  # Асинхронно сохраняем статистику
-    await message.answer(f"{random.choice(truths)}\n\nТы получил 1 очко! Всего очков: {stats[user_id]['points']}")
+    stats = load_stats()
+    if user_id in stats:
+        stats[user_id]["in_game"] = False
+    save_stats(stats)
+    await state.update_data(in_game=False)
+    await message.answer("Игра остановлена. Возвращайся, когда захочешь!")
 
-@router.message(lambda message: message.text == "💪 Действие")
-async def dare_handler(message: types.Message, state: FSMContext):
-    logging.info("Dare selected")
+@dp.message(Command("truth"))
+async def send_truth(message: Message):
     user_id = str(message.from_user.id)
-    stats = await load_stats()
-    if user_id not in stats:
-        stats[user_id] = {"points": 0, "in_game": False}
-    stats[user_id]["points"] += 1
-    await save_stats(stats)  # Асинхронно сохраняем статистику
-    await message.answer(f"{random.choice(dares)}\n\nТы получил 1 очко! Всего очков: {stats[user_id]['points']}")
+    stats = load_stats()
+    if stats.get(user_id, {}).get("in_game", False):
+        question = random.choice(truths)
+        await message.answer(f"🎭 Правда: {question}")
+    else:
+        await message.answer("Ты не в игре. Напиши /start, чтобы начать.")
 
-# Обработчик кнопки "ℹ️ О игре"
-@router.message(lambda message: message.text == "ℹ️ О игре")
-async def about_game(message: types.Message):
-    game_info = (
-        "🎮 'Правда или Действие' - веселая игра для компании! \n"
-        "Выбирайте 'Правду', если готовы ответить на каверзный вопрос, \n"
-        "или 'Действие', если хотите выполнить интересное задание!\n"
-        "Нажмите '⛔ Стоп', чтобы выйти, или '📊 Статистика', чтобы узнать свои очки."
-    )
-    await message.answer(game_info)
+@dp.message(Command("dare"))
+async def send_dare(message: Message):
+    user_id = str(message.from_user.id)
+    stats = load_stats()
+    if stats.get(user_id, {}).get("in_game", False):
+        action = random.choice(daress)
+        await message.answer(f"💪 Действие: {action}")
+    else:
+        await message.answer("Ты не в игре. Напиши /start, чтобы начать.")
 
-# Запуск бота
+@dp.message(Command("stat"))
+async def show_stats(message: Message):
+    user_id = str(message.from_user.id)
+    stats = load_stats()
+    points = stats.get(user_id, {}).get("points", 0)
+    await message.answer(f"Твои очки: {points}")
+
 async def main():
-    await set_commands(bot)
-    logging.info("Starting bot...")
-    dp.include_router(router)
     await dp.start_polling(bot)
 
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
+if __name__ == "__main__":
     asyncio.run(main())
 
 
