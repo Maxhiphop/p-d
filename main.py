@@ -1,15 +1,16 @@
-import asyncio
-import logging
-import json
+from aiogram.types import ReplyKeyboardRemove
 import random
+import json
 import aiofiles
-from aiogram import Bot, Dispatcher, types, Router, F
-from aiogram.types import Message
-from aiogram.fsm.context import FSMContext
+import logging
+import asyncio
+from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
+from aiogram.fsm.context import FSMContext
+from aiogram import Router
 
+# Инициализация бота
 TOKEN = "7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ"
-
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 router = Router()
@@ -253,8 +254,21 @@ dares = [
 
 
 
-from aiogram.types import ReplyKeyboardRemove
+# Асинхронная загрузка статистики
+async def load_stats():
+    try:
+        async with aiofiles.open(STATS_FILE, "r", encoding="utf-8") as file:
+            content = await file.read()
+            return json.loads(content) if content else {}
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
 
+# Асинхронное сохранение статистики
+async def save_stats(stats):
+    async with aiofiles.open(STATS_FILE, "w", encoding="utf-8") as file:
+        await file.write(json.dumps(stats, indent=4, ensure_ascii=False))
+
+# Команда /start для начала игры
 @router.message(Command("start"))
 async def start_game(message: Message, state: FSMContext):
     user_id = str(message.from_user.id)
@@ -267,8 +281,9 @@ async def start_game(message: Message, state: FSMContext):
 
     await save_stats(stats)
     await state.update_data(in_game=True)
-    await message.answer("Привет! Давай сыграем в 'Правду или Действие'!", reply_markup=ReplyKeyboardRemove())
+    await message.answer("Привет! Давай сыграем в 'Правду или Действие'! Используй /truth для правды или /dare для действия.")
 
+# Команда /stop для остановки игры
 @router.message(Command("stop"))
 async def stop_game(message: Message, state: FSMContext):
     user_id = str(message.from_user.id)
@@ -281,6 +296,7 @@ async def stop_game(message: Message, state: FSMContext):
     await state.update_data(in_game=False)
     await message.answer("Игра остановлена. Возвращайся, когда захочешь!")
 
+# Команда /truth для получения вопроса "Правда"
 @router.message(Command("truth"))
 async def send_truth(message: Message):
     user_id = str(message.from_user.id)
@@ -292,6 +308,7 @@ async def send_truth(message: Message):
     else:
         await message.answer("Ты не в игре. Напиши /start, чтобы начать.")
 
+# Команда /dare для получения действия "Действие"
 @router.message(Command("dare"))
 async def send_dare(message: Message):
     user_id = str(message.from_user.id)
@@ -303,6 +320,7 @@ async def send_dare(message: Message):
     else:
         await message.answer("Ты не в игре. Напиши /start, чтобы начать.")
 
+# Основная асинхронная функция для запуска бота
 async def main():
     logging.basicConfig(level=logging.INFO)
     await dp.start_polling(bot)
