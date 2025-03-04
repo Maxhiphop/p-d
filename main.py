@@ -262,32 +262,32 @@ async def send_question_or_dare(message: types.Message, mode="truth"):
 
 @dp.message(Command("start"))
 async def cmd_start(message: Message):
-    # Create keyboard buttons with keyword arguments
-    truth_button = KeyboardButton(text="Truth")
-    dare_button = KeyboardButton(text="Dare")
-    leaderboard_button = KeyboardButton(text="Leaderboard")
+    # Создание кнопок для клавиатуры
+    truth_button = KeyboardButton(text="Правда")
+    dare_button = KeyboardButton(text="Вызов")
+    leaderboard_button = KeyboardButton(text="Таблица лидеров")
     
-    # Create keyboard with buttons (pass a list of buttons)
+    # Создание клавиатуры с кнопками
     keyboard = ReplyKeyboardMarkup(
         keyboard=[[truth_button, dare_button, leaderboard_button]], 
         resize_keyboard=True
     )
     
-    await message.answer("Welcome! Choose: Truth or Dare.", reply_markup=keyboard)
+    await message.answer("Привет! Выбери: Правда или Вызов?", reply_markup=keyboard)
 
-@dp.message(lambda message: message.text in ["Truth", "Dare", "Leaderboard"])  # Use lambda to filter the message
+@dp.message(lambda message: message.text in ["Правда", "Вызов", "Таблица лидеров"])  # Используем lambda для фильтрации
 async def handle_buttons(message: types.Message):
-    if message.text == "Truth":
+    if message.text == "Правда":
         await message.answer(random.choice(truths))
         update_leaderboard(message.from_user.id, message.from_user.username)
-    elif message.text == "Dare":
+    elif message.text == "Вызов":
         await message.answer(random.choice(dares))
         update_leaderboard(message.from_user.id, message.from_user.username)
-    elif message.text == "Leaderboard":
+    elif message.text == "Таблица лидеров":
         leaderboard = get_leaderboard()
-        await message.answer(f"Top players:\n{leaderboard}")
+        await message.answer(f"Топ игроки:\n{leaderboard}")
 
-# Update leaderboard
+# Обновление таблицы лидеров
 def update_leaderboard(user_id, username):
     cursor.execute("SELECT score FROM leaders WHERE user_id = ?", (user_id,))
     result = cursor.fetchone()
@@ -297,18 +297,19 @@ def update_leaderboard(user_id, username):
         cursor.execute("INSERT INTO leaders (user_id, username, score) VALUES (?, ?, 1)", (user_id, username))
     conn.commit()
 
-# Get leaderboard
+# Получение таблицы лидеров
 def get_leaderboard():
     cursor.execute("SELECT username, score FROM leaders ORDER BY score DESC LIMIT 10")
     leaders = cursor.fetchall()
-    return "\n".join([f"{i+1}. {user[0]} - {user[1]} points" for i, user in enumerate(leaders)])
+    return "\n".join([f"{i+1}. {user[0]} - {user[1]} очков" for i, user in enumerate(leaders)])
 
-# Run the bot
+# Запуск бота
 async def main():
     await dp.start_polling(bot)
 
 if __name__ == '__main__':
     asyncio.run(main())
+    
     file.write("# p-d\n")
 import subprocess
 
