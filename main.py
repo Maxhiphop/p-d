@@ -253,6 +253,8 @@ dares = [
 
 
 
+from aiogram.types import ReplyKeyboardRemove
+
 @router.message(Command("start"))
 async def start_game(message: Message, state: FSMContext):
     user_id = str(message.from_user.id)
@@ -265,7 +267,7 @@ async def start_game(message: Message, state: FSMContext):
 
     await save_stats(stats)
     await state.update_data(in_game=True)
-    await message.answer("Привет! Давай сыграем в 'Правду или Действие'! Используй /truth или /dare")
+    await message.answer("Привет! Давай сыграем в 'Правду или Действие'!", reply_markup=ReplyKeyboardRemove())
 
 @router.message(Command("stop"))
 async def stop_game(message: Message, state: FSMContext):
