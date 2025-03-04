@@ -1,6 +1,7 @@
-
 import asyncio
 import random
+import sqlite3
+from aiogram import Bot, Dispatcher, types
 
 TOKEN = "7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ"
 bot = Bot(token=TOKEN)
@@ -275,20 +276,22 @@ async def start(message: types.Message):
 @dp.message_handler(lambda message: message.text in ["Правда", "Действие", "Таблица лидеров"])
 async def handle_buttons(message: types.Message):
     if message.text == "Правда":
-        await message.answer(random.choice(truth_questions))
+        await message.answer(random.choice(truths))
         update_leaderboard(message.from_user.id, message.from_user.username)
     elif message.text == "Действие":
-        await message.answer(random.choice(dare_tasks))
+        await message.answer(random.choice(dares))
         update_leaderboard(message.from_user.id, message.from_user.username)
     elif message.text == "Таблица лидеров":
         leaderboard = get_leaderboard()
         await message.answer(f"Топ игроков:\n{leaderboard}")
 
-   async def main():
+# Основная функция
+async def main():
     await dp.start_polling(bot)
 
-async def main():
-    # код функции здесь
+# Запуск бота
+if __name__ == '__main__':
+    asyncio.run(main())
 
 
     file.write("# p-d\n")
