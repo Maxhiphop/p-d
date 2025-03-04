@@ -5,8 +5,6 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.types import Message
 
-
-
 TOKEN = "7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ"
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
@@ -250,6 +248,7 @@ dares = [
     # Добавьте другие действия...
 ]
 
+
 def get_random_item(lst):
     return random.choice(lst)
 
@@ -263,9 +262,7 @@ async def send_question_or_dare(message: types.Message, mode="truth"):
 
 @dp.message(Command("start"))
 async def cmd_start(message: Message):
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    buttons = ["Truth", "Dare", "Leaderboard"]
-    keyboard.add(*buttons)
+    keyboard = types.ReplyKeyboardMarkup(keyboard=[["Truth", "Dare", "Leaderboard"]], resize_keyboard=True)
     await message.answer("Welcome! Choose: Truth or Dare.", reply_markup=keyboard)
 
 @dp.message(lambda message: message.text in ["Truth", "Dare", "Leaderboard"])  # Use lambda to filter the message
