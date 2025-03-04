@@ -1,7 +1,6 @@
 from aiogram import Bot, Dispatcher, types
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import Command
-from aiogram import Router
 import random
 import json
 import aiofiles
@@ -12,11 +11,10 @@ import asyncio
 TOKEN = "7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ"
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
-router = Router()
-dp.include_router(router)
 
 # Файл статистики
 STATS_FILE = "stats.json"
+
 
 # Списки вопросов и действий
 truths = [
@@ -248,20 +246,24 @@ async def load_stats():
         async with aiofiles.open(STATS_FILE, "r", encoding="utf-8") as file:
             content = await file.read()
             return json.loads(content) if content else {}
-    except (FileNotFoundError, json.JSONDecodeError):
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        logging.error(f"Ошибка загрузки статистики: {e}")
         return {}
 
 # Асинхронное сохранение статистики
 async def save_stats(stats):
-    async with aiofiles.open(STATS_FILE, "w", encoding="utf-8") as file:
-        await file.write(json.dumps(stats, indent=4, ensure_ascii=False))
+    try:
+        async with aiofiles.open(STATS_FILE, "w", encoding="utf-8") as file:
+            await file.write(json.dumps(stats, indent=4, ensure_ascii=False))
+    except Exception as e:
+        logging.error(f"Ошибка сохранения статистики: {e}")
 
 # Команда /start для начала игры
-@router.message(Command("start"))
-async def start_game(message: types.Message, state: FSMContext):  # Исправлено на types.Message
+@dp.message(Command("start"))
+async def start_game(message: types.Message, state: FSMContext): 
     user_id = str(message.from_user.id)
     stats = await load_stats()
-    
+
     if user_id not in stats:
         stats[user_id] = {"points": 0, "in_game": True}
     else:
@@ -272,11 +274,11 @@ async def start_game(message: types.Message, state: FSMContext):  # Исправ
     await message.answer("Привет! Давай сыграем в 'Правду или Действие'! Используй /truth для правды или /dare для действия.")
 
 # Команда /stop для остановки игры
-@router.message(Command("stop"))
-async def stop_game(message: types.Message, state: FSMContext):  # Исправлено на types.Message
+@dp.message(Command("stop"))
+async def stop_game(message: types.Message, state: FSMContext): 
     user_id = str(message.from_user.id)
     stats = await load_stats()
-    
+
     if user_id in stats:
         stats[user_id]["in_game"] = False
 
@@ -285,11 +287,11 @@ async def stop_game(message: types.Message, state: FSMContext):  # Исправ�
     await message.answer("Игра остановлена. Возвращайся, когда захочешь!")
 
 # Команда /truth для получения вопроса "Правда"
-@router.message(Command("truth"))
-async def send_truth(message: types.Message):  # Исправлено на types.Message
+@dp.message(Command("truth"))
+async def send_truth(message: types.Message): 
     user_id = str(message.from_user.id)
     stats = await load_stats()
-    
+
     if stats.get(user_id, {}).get("in_game", False):
         question = random.choice(truths)
         await message.answer(f"🎭 Правда: {question}")
@@ -297,11 +299,11 @@ async def send_truth(message: types.Message):  # Исправлено на types
         await message.answer("Ты не в игре. Напиши /start, чтобы начать.")
 
 # Команда /dare для получения действия "Действие"
-@router.message(Command("dare"))
-async def send_dare(message: types.Message):  # Исправлено на types.Message
+@dp.message(Command("dare"))
+async def send_dare(message: types.Message): 
     user_id = str(message.from_user.id)
     stats = await load_stats()
-    
+
     if stats.get(user_id, {}).get("in_game", False):
         dare = random.choice(dares)
         await message.answer(f"🎭 Действие: {dare}")
@@ -315,6 +317,7 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
     file.write("# p-d\n")
 import subprocess
