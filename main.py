@@ -267,8 +267,11 @@ async def cmd_start(message: Message):
     dare_button = KeyboardButton(text="Dare")
     leaderboard_button = KeyboardButton(text="Leaderboard")
     
-    # Create keyboard with buttons
-    keyboard = ReplyKeyboardMarkup(resize_keyboard=True).add(truth_button, dare_button, leaderboard_button)
+    # Create keyboard with buttons (pass a list of buttons)
+    keyboard = ReplyKeyboardMarkup(
+        keyboard=[[truth_button, dare_button, leaderboard_button]], 
+        resize_keyboard=True
+    )
     
     await message.answer("Welcome! Choose: Truth or Dare.", reply_markup=keyboard)
 
@@ -306,7 +309,6 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())
-    
     file.write("# p-d\n")
 import subprocess
 
