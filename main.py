@@ -21,6 +21,16 @@ cursor.execute("""
 """)
 conn.commit()
 
+# Пример данных для команд
+team_categories = ["Темные маги", "Стражи правды", "Слуги тени"]
+
+# Словарь для хранения команд
+teams = {}
+
+# Функция для получения случайного откровения или испытания
+def retrieve_random_item(lst):
+    return random.choice(lst)
+
 # Списки вопросов и действий
 truths = [
 "Какой твой самый большой секрет?",
@@ -248,10 +258,6 @@ dares = [
     # Добавьте другие действия...
 ]
 
-# Функция для получения случайного откровения или испытания
-def retrieve_random_item(lst):
-    return random.choice(lst)
-
 # Асинхронная отправка откровения или испытания
 async def unleash_truth_or_dare(message: types.Message, mode="truth"):
     if mode == "truth":
@@ -261,22 +267,25 @@ async def unleash_truth_or_dare(message: types.Message, mode="truth"):
         challenge = retrieve_random_item(dares)
         await message.answer(f"Твоя испытание: {challenge}")
 
+# Команда для старта
 @dp.message(Command("start"))
 async def initiate_dark_ritual(message: Message):
     # Создание кнопок для клавиатуры
     truth_button = KeyboardButton(text="Откровенность")
     dare_button = KeyboardButton(text="Испытание")
     leaderboard_button = KeyboardButton(text="Потёмки лидеров")
+    team_button = KeyboardButton(text="Присоединиться к команде")
     
     # Создание клавиатуры с кнопками
     keyboard = ReplyKeyboardMarkup(
-        keyboard=[[truth_button, dare_button, leaderboard_button]], 
+        keyboard=[[truth_button, dare_button, leaderboard_button, team_button]], 
         resize_keyboard=True
     )
     
-    await message.answer("Приветствую, выбери: Откровенность или Испытание?", reply_markup=keyboard)
+    await message.answer("Приветствую, выбери: Откровенность, Испытание или присоединяйся к команде?", reply_markup=keyboard)
 
-@dp.message(lambda message: message.text in ["Откровенность", "Испытание", "Потёмки лидеров"])  # Используем lambda для фильтрации
+# Обработка кнопок
+@dp.message(lambda message: message.text in ["Откровенность", "Испытание", "Потёмки лидеров", "Присоединиться к команде"])
 async def handle_dark_choices(message: types.Message):
     if message.text == "Откровенность":
         await unleash_truth_or_dare(message, mode="truth")
@@ -287,6 +296,50 @@ async def handle_dark_choices(message: types.Message):
     elif message.text == "Потёмки лидеров":
         leaderboard = await retrieve_leaderboard()
         await message.answer(f"Тёмная элита:\n{leaderboard}")
+    elif message.text == "Присоединиться к команде":
+        await join_team(message)
+
+# Функция для присоединения к команде
+async def join_team(message: types.Message):
+    user_id = message.from_user.id
+    if user_id in teams:
+        await message.answer("Ты уже в команде.")
+        return
+    
+    # Выбор команды
+    keyboard = ReplyKeyboardMarkup(
+        keyboard=[[KeyboardButton(text=category)] for category in team_categories], 
+        resize_keyboard=True
+    )
+    
+    await message.answer("Выбери команду, в которую хочешь присоединиться:", reply_markup=keyboard)
+
+# Функция для выбора команды
+@dp.message(lambda message: message.text in team_categories)
+async def assign_team(message: types.Message):
+    user_id = message.from_user.id
+    selected_team = message.text
+    
+    # Добавление игрока в выбранную команду
+    if user_id not in teams:
+        teams[user_id] = selected_team
+        await message.answer(f"Ты присоединился к команде {selected_team}. Теперь жди задания!")
+    else:
+        await message.answer("Ты уже в другой команде.")
+
+# Функция для командных заданий
+async def assign_team_task():
+    # Разделение участников по категориям
+    team_tasks = {
+        "Темные маги": "Выполните заклинание тьмы",
+        "Стражи правды": "Ответьте на философский вопрос",
+        "Слуги тени": "Пройдите через лабиринт тени"
+    }
+    
+    for user_id, team in teams.items():
+        task = team_tasks.get(team)
+        user = await bot.get_chat_member(chat_id=chat_id, user_id=user_id)
+        await bot.send_message(user_id, f"Ваша командное задание: {task}")
 
 # Обновление таблицы лидеров
 async def update_leaderboard(user_id, username):
@@ -310,6 +363,7 @@ async def summon_bot():
 
 if __name__ == '__main__':
     asyncio.run(summon_bot())
+
     
     file.write("# p-d\n")
 import subprocess
