@@ -7,7 +7,9 @@ from aiogram.filters import Command
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from aiogram.client.default import DefaultBotProperties
 
+# Создание бота и диспетчера
 bot = Bot("7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ", default=DefaultBotProperties(parse_mode="MarkdownV2"))
+dp = Dispatcher(bot)
 
 # Подключение к БД
 conn = sqlite3.connect("leaderboard.db")
@@ -21,7 +23,6 @@ cursor.execute("""
     )
 """)
 conn.commit()
-
 # Списки вопросов и действий
 truths = [
 "Какой твой самый большой секрет?",
@@ -273,7 +274,7 @@ async def send_question_or_dare(call: CallbackQuery):
     username = call.from_user.username or call.from_user.first_name
 
     if call.data == "truth":
-        task = random.choice(truth_questions)
+        task = random.choice(truths)
         text = f"*🎭 Правда:*\n_{task}_"
     else:
         task = random.choice(dares)
@@ -303,11 +304,10 @@ async def show_leaderboard(call: CallbackQuery):
 
 # Запуск бота
 async def main():
-    await dp.start_polling(bot)
+    await dp.start_polling()
 
 if __name__ == "__main__":
     asyncio.run(main())
-
     
     file.write("# p-d\n")
 import subprocess
