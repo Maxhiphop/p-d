@@ -264,7 +264,7 @@ async def cmd_start(message: Message):
     # Создание кнопок для клавиатуры
     truth_button = KeyboardButton(text="Правда")
     dare_button = KeyboardButton(text="Вызов")
-    leaderboard_button = KeyboardButton(text="Таблица лидеров по бананам")
+    leaderboard_button = KeyboardButton(text="Таблица лидеров")
     
     # Создание клавиатуры с кнопками
     keyboard = ReplyKeyboardMarkup(
@@ -274,7 +274,7 @@ async def cmd_start(message: Message):
     
     await message.answer("Привет! Выбери: Правда или Вызов?", reply_markup=keyboard)
 
-@dp.message(lambda message: message.text in ["Правда", "Вызов", "Таблица лидеров по бананам"])  # Используем lambda для фильтрации
+@dp.message(lambda message: message.text in ["Правда", "Вызов", "Таблица лидеров"])  # Используем lambda для фильтрации
 async def handle_buttons(message: types.Message):
     if message.text == "Правда":
         await message.answer(random.choice(truths))
@@ -282,7 +282,7 @@ async def handle_buttons(message: types.Message):
     elif message.text == "Вызов":
         await message.answer(random.choice(dares))
         update_leaderboard(message.from_user.id, message.from_user.username)
-    elif message.text == "Таблица лидеров по бананам ":
+    elif message.text == "Таблица лидеров":
         leaderboard = get_leaderboard()
         await message.answer(f"Топ бананщики:\n{leaderboard}")
 
