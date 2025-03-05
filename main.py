@@ -5,7 +5,8 @@ import time
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 from aiogram.filters import Command
-from aiogram.exceptions import AiogramAPIError
+from aiogram.exceptions import AiogramError
+
 
 
 API_TOKEN = "7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ"
@@ -304,23 +305,24 @@ async def handle_buttons(message: types.Message):
     user_id = message.from_user.id
     text = message.text.lower()
 
-    # Проверка спама
-    current_time = time.time()
-    if user_id in user_spam:
-        user_spam[user_id].append(current_time)
-        user_spam[user_id] = [t for t in user_spam[user_id] if current_time - t < 5]  # Убираем старые записи
+   # Проверка спама
+current_time = time.time()
+if user_id in user_spam:
+    user_spam[user_id].append(current_time)
+    user_spam[user_id] = [t for t in user_spam[user_id] if current_time - t < 5]  # Убираем старые записи
 
-        if len(user_spam[user_id]) > 3:  # Если больше 3 сообщений за 5 секунд
-            try:
-                await message.bot.restrict_chat_member(
-                    chat_id=message.chat.id,
-                    user_id=message.from_user.id,
-                    permissions=types.ChatPermissions(can_send_messages=False),
-                    until_date=int(time.time()) + 60  # Мут на 60 секунд
-                )
-                await message.answer("Вы были заблокированы на 60 секунд за частые сообщения.")
-            except AiogramAPIError as e:
-                await message.answer(f"Ошибка: {e}")
+    if len(user_spam[user_id]) > 3:  # Если больше 3 сообщений за 5 секунд
+        try:
+            await message.bot.restrict_chat_member(
+                chat_id=message.chat.id,
+                user_id=message.from_user.id,
+                permissions=types.ChatPermissions(can_send_messages=False),
+                until_date=int(time.time()) + 60  # Мут на 60 секунд
+            )
+            await message.answer("Вы были заблокированы на 60 секунд за частые сообщения.")
+        except AiogramError as e:
+            await message.answer(f"Ошибка: {e}")
+
     
     # Обработка кнопок
     if text == "правда":
