@@ -1,23 +1,27 @@
 import asyncio
 import random
 import sqlite3
+import time
 from aiogram import Bot, Dispatcher, types
+from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 from aiogram.filters import Command
-from aiogram.types import Message, KeyboardButton, ReplyKeyboardMarkup
+from aiogram.utils.exceptions import ChatAdminRequired
 
-TOKEN = "7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ"
-bot = Bot(token=TOKEN)
+API_TOKEN = "7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ"
+bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
 
-# Настройка базы данных
-conn = sqlite3.connect("leaders.db")
+# Подключение к базе данных SQLite
+conn = sqlite3.connect("leaderboard.db")
 cursor = conn.cursor()
+
+# Создаем таблицу лидеров, если её нет
 cursor.execute("""
-    CREATE TABLE IF NOT EXISTS leaders (
-        user_id INTEGER PRIMARY KEY,
-        username TEXT,
-        score INTEGER DEFAULT 0
-    )
+CREATE TABLE IF NOT EXISTS leaders (
+    user_id INTEGER PRIMARY KEY,
+    username TEXT,
+    score INTEGER DEFAULT 0
+)
 """)
 conn.commit()
 
@@ -248,25 +252,44 @@ dares = [
     # Добавьте другие действия...
 ]
 
+# Словарь для антиспама
+user_spam = {}
+
+# Функция выбора случайного элемента
 def get_random_item(lst):
     return random.choice(lst)
 
-async def send_question_or_dare(message: types.Message, mode="truth"):
-    if mode == "truth":
-        question = get_random_item(truths)
-        await message.answer(f"Твоя правда: {question}")
+# Функция обновления таблицы лидеров
+def update_leaderboard(user_id, username):
+    cursor.execute("SELECT score FROM leaders WHERE user_id = ?", (user_id,))
+    result = cursor.fetchone()
+    
+    if result:
+        cursor.execute("UPDATE leaders SET score = score + 1 WHERE user_id = ?", (user_id,))
     else:
-        dare = get_random_item(dares)
-        await message.answer(f"Твой вызов: {dare}")
+        cursor.execute("INSERT INTO leaders (user_id, username, score) VALUES (?, ?, 1)", (user_id, username))
+    
+    conn.commit()
 
+# Функция получения таблицы лидеров
+def get_leaderboard():
+    cursor.execute("SELECT username, score FROM leaders ORDER BY score DESC LIMIT 10")
+    leaders = cursor.fetchall()
+    
+    if not leaders:
+        return "Пока никто не играл!"
+    
+    return "\n".join([f"{i+1}. {user[0]} - {user[1]} корон" for i, user in enumerate(leaders)])
+
+# Команда /start
 @dp.message(Command("start"))
-async def cmd_start(message: Message):
-    # Создание кнопок для клавиатуры
+async def cmd_start(message: types.Message):
+    # Кнопки
     truth_button = KeyboardButton(text="Правда")
     dare_button = KeyboardButton(text="Вызов")
     leaderboard_button = KeyboardButton(text="Таблица лидеров")
     
-    # Создание клавиатуры с кнопками
+    # Клавиатура
     keyboard = ReplyKeyboardMarkup(
         keyboard=[[truth_button, dare_button, leaderboard_button]], 
         resize_keyboard=True
@@ -274,33 +297,45 @@ async def cmd_start(message: Message):
     
     await message.answer("Привет! Выбери: Правда или Вызов?", reply_markup=keyboard)
 
-@dp.message(lambda message: message.text in ["Правда", "Вызов", "Таблица лидеров"])  # Используем lambda для фильтрации
+# Обработка кнопок + антиспам
+@dp.message(lambda message: message.text in ["Правда", "Вызов", "Таблица лидеров"])
 async def handle_buttons(message: types.Message):
-    if message.text == "Правда":
+    user_id = message.from_user.id
+    text = message.text.lower()
+
+    # Проверка спама
+    current_time = time.time()
+    if user_id in user_spam:
+        user_spam[user_id].append(current_time)
+        user_spam[user_id] = [t for t in user_spam[user_id] if current_time - t < 5]  # Убираем старые записи
+
+        if len(user_spam[user_id]) > 3:  # Если больше 3 сообщений за 5 секунд
+            try:
+                await message.bot.restrict_chat_member(
+                    chat_id=message.chat.id,
+                    user_id=user_id,
+                    until_date=message.date + 1800,  # 30 минут мут
+                    permissions=types.ChatPermissions(
+                        can_send_messages=False
+                    )
+                )
+                await message.answer(f"🚫 {message.from_user.first_name}, не спамь! Ты в муте на 30 минут.")
+            except ChatAdminRequired:
+                await message.answer("⚠️ У меня нет прав для мута пользователей.")
+            return
+    else:
+        user_spam[user_id] = [current_time]
+
+    # Обработка кнопок
+    if text == "правда":
         await message.answer(random.choice(truths))
         update_leaderboard(message.from_user.id, message.from_user.username)
-    elif message.text == "Вызов":
+    elif text == "вызов":
         await message.answer(random.choice(dares))
         update_leaderboard(message.from_user.id, message.from_user.username)
-    elif message.text == "Таблица лидеров":
+    elif text == "таблица лидеров":
         leaderboard = get_leaderboard()
-        await message.answer(f"Топ коронок:\n{leaderboard}")
-
-# Обновление таблицы лидеров
-def update_leaderboard(user_id, username):
-    cursor.execute("SELECT score FROM leaders WHERE user_id = ?", (user_id,))
-    result = cursor.fetchone()
-    if result:
-        cursor.execute("UPDATE leaders SET score = score + 1 WHERE user_id = ?", (user_id,))
-    else:
-        cursor.execute("INSERT INTO leaders (user_id, username, score) VALUES (?, ?, 1)", (user_id, username))
-    conn.commit()
-
-# Получение таблицы лидеров
-def get_leaderboard():
-    cursor.execute("SELECT username, score FROM leaders ORDER BY score DESC LIMIT 10")
-    leaders = cursor.fetchall()
-    return "\n".join([f"{i+1}. {user[0]} - {user[1]} корон" for i, user in enumerate(leaders)])
+        await message.answer(f"🏆 Топ игроков:\n{leaderboard}")
 
 # Запуск бота
 async def main():
