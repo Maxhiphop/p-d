@@ -6,7 +6,7 @@ from aiogram.types import CallbackQuery
 import sqlite3
 import random
 
-TOKEN = "YOUR_BOT_TOKEN"
+TOKEN = "7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ"
 bot = Bot(token=TOKEN, parse_mode="MarkdownV2")
 dp = Dispatcher()
 
