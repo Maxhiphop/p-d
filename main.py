@@ -9,8 +9,6 @@ from aiogram.client.default import DefaultBotProperties
 
 bot = Bot("7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ", default=DefaultBotProperties(parse_mode="MarkdownV2"))
 
-
-TOKEN = "7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ"
 bot = Bot(TOKEN, parse_mode="MarkdownV2")
 dp = Dispatcher()
 
