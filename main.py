@@ -284,7 +284,7 @@ async def handle_buttons(message: types.Message):
         update_leaderboard(message.from_user.id, message.from_user.username)
     elif message.text == "Таблица лидеров":
         leaderboard = get_leaderboard()
-        await message.answer(f"Топ бананщики:\n{leaderboard}")
+        await message.answer(f"Топ коронок:\n{leaderboard}")
 
 # Обновление таблицы лидеров
 def update_leaderboard(user_id, username):
@@ -300,7 +300,7 @@ def update_leaderboard(user_id, username):
 def get_leaderboard():
     cursor.execute("SELECT username, score FROM leaders ORDER BY score DESC LIMIT 10")
     leaders = cursor.fetchall()
-    return "\n".join([f"{i+1}. {user[0]} - {user[1]} банан" for i, user in enumerate(leaders)])
+    return "\n".join([f"{i+1}. {user[0]} - {user[1]} корон" for i, user in enumerate(leaders)])
 
 # Запуск бота
 async def main():
