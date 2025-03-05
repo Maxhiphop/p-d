@@ -9,7 +9,6 @@ from aiogram.client.default import DefaultBotProperties
 
 # Создание бота и диспетчера
 bot = Bot("7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ", default=DefaultBotProperties(parse_mode="MarkdownV2"))
-dp = Dispatcher(bot)
 
 # Подключение к БД
 conn = sqlite3.connect("leaderboard.db")
