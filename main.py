@@ -1,21 +1,21 @@
-import asyncio
-import random
-import sqlite3
 from aiogram import Bot, Dispatcher, types
-from aiogram.filters import Command
-from aiogram.types import Message, KeyboardButton, ReplyKeyboardMarkup
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.utils import executor
+import sqlite3
+import random
 
 TOKEN = "7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ"
-bot = Bot(token=TOKEN)
-dp = Dispatcher()
+bot = Bot(token=TOKEN, parse_mode="MarkdownV2")
+dp = Dispatcher(bot)
 
-# Setup database
-conn = sqlite3.connect("leaders.db")
+# Подключение к БД
+conn = sqlite3.connect("leaderboard.db")
 cursor = conn.cursor()
+
 cursor.execute("""
-    CREATE TABLE IF NOT EXISTS leaders (
-        user_id INTEGER PRIMARY KEY,
-        username TEXT,
+    CREATE TABLE IF NOT EXISTS leaderboard (
+        user_id INTEGER PRIMARY KEY, 
+        username TEXT, 
         score INTEGER DEFAULT 0
     )
 """)
@@ -249,66 +249,61 @@ dares = [
     # Добавьте другие действия...
 ]
 
-def get_random_item(lst):
-    return random.choice(lst)
-
-async def send_question_or_dare(message: types.Message, mode="truth"):
-    if mode == "truth":
-        question = get_random_item(truths)
-        await message.answer(f"Твоя правда: {question}")
-    else:
-        dare = get_random_item(dares)
-        await message.answer(f"Твой вызов: {dare}")
-
-@dp.message(Command("start"))
-async def cmd_start(message: Message):
-    # Создание кнопок для клавиатуры
-    truth_button = KeyboardButton(text="Правда")
-    dare_button = KeyboardButton(text="Вызов")
-    leaderboard_button = KeyboardButton(text="Таблица лидеров")
-    
-    # Создание клавиатуры с кнопками
-    keyboard = ReplyKeyboardMarkup(
-        keyboard=[[truth_button, dare_button, leaderboard_button]], 
-        resize_keyboard=True
+# Кнопки меню
+def main_menu():
+    keyboard = InlineKeyboardMarkup(row_width=2)
+    keyboard.add(
+        InlineKeyboardButton("🎭 Правда", callback_data="truth"),
+        InlineKeyboardButton("🎲 Вызов", callback_data="dare"),
+        InlineKeyboardButton("🏆 Лидеры", callback_data="leaderboard")
     )
-    
-    await message.answer("Привет! Выбери: Правда или Вызов?", reply_markup=keyboard)
+    return keyboard
 
-@dp.message(lambda message: message.text in ["Правда", "Вызов", "Таблица лидеров"])  # Используем lambda для фильтрации
-async def handle_buttons(message: types.Message):
-    if message.text == "Правда":
-        await message.answer(random.choice(truths))
-        update_leaderboard(message.from_user.id, message.from_user.username)
-    elif message.text == "Вызов":
-        await message.answer(random.choice(dares))
-        update_leaderboard(message.from_user.id, message.from_user.username)
-    elif message.text == "Таблица лидеров":
-        leaderboard = get_leaderboard()
-        await message.answer(f"Топ игроки:\n{leaderboard}")
+@dp.message_handler(commands=["start"])
+async def start_game(message: types.Message):
+    text = (
+        "*Привет, {user}!* 🎉\n\n"
+        "Добро пожаловать в игру *Правда или Вызов*!\n\n"
+        "Жми на кнопки и получай задания 😈"
+    ).format(user=message.from_user.first_name)
+    await message.answer(text, reply_markup=main_menu())
 
-# Обновление таблицы лидеров
-def update_leaderboard(user_id, username):
-    cursor.execute("SELECT score FROM leaders WHERE user_id = ?", (user_id,))
-    result = cursor.fetchone()
-    if result:
-        cursor.execute("UPDATE leaders SET score = score + 1 WHERE user_id = ?", (user_id,))
+@dp.callback_query_handler(lambda call: call.data in ["truth", "dare"])
+async def send_question_or_dare(call: types.CallbackQuery):
+    user_id = call.from_user.id
+    username = call.from_user.username or call.from_user.first_name
+
+    if call.data == "truth":
+        task = random.choice(truth_questions)
+        text = f"*🎭 Правда:*\n_{task}_"
     else:
-        cursor.execute("INSERT INTO leaders (user_id, username, score) VALUES (?, ?, 1)", (user_id, username))
+        task = random.choice(dares)
+        text = f"*🎲 Вызов:*\n_{task}_"
+    
+    # Обновляем или добавляем пользователя в таблицу
+    cursor.execute("INSERT INTO leaderboard (user_id, username, score) VALUES (?, ?, 1) "
+                   "ON CONFLICT(user_id) DO UPDATE SET score = score + 1",
+                   (user_id, username))
     conn.commit()
 
-# Получение таблицы лидеров
-def get_leaderboard():
-    cursor.execute("SELECT username, score FROM leaders ORDER BY score DESC LIMIT 10")
-    leaders = cursor.fetchall()
-    return "\n".join([f"{i+1}. {user[0]} - {user[1]} очков" for i, user in enumerate(leaders)])
+    await call.message.edit_text(text, reply_markup=main_menu())
 
-# Запуск бота
-async def main():
-    await dp.start_polling(bot)
+@dp.callback_query_handler(lambda call: call.data == "leaderboard")
+async def show_leaderboard(call: types.CallbackQuery):
+    cursor.execute("SELECT username, score FROM leaderboard ORDER BY score DESC LIMIT 10")
+    rows = cursor.fetchall()
 
-if __name__ == '__main__':
-    asyncio.run(main())
+    if not rows:
+        text = "*🏆 Лидеры:*\n\n_Пока никто не играл 😔_"
+    else:
+        text = "*🏆 Лидеры игры:*\n\n"
+        for idx, (username, score) in enumerate(rows, 1):
+            text += f"{idx}. *{username}* — {score} очков\n"
+
+    await call.message.edit_text(text, reply_markup=main_menu())
+
+if __name__ == "__main__":
+    executor.start_polling(dp, skip_updates=True)
     
     file.write("# p-d\n")
 import subprocess
