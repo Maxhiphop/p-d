@@ -26,6 +26,8 @@ team_categories = ["Темные маги", "Стражи правды", "Слу
 
 # Словарь для хранения команд
 teams = {}
+# Статистика игроков
+player_stats = {}
 
 # Функция для получения случайного откровения или испытания
 def retrieve_random_item(lst):
@@ -284,23 +286,27 @@ async def initiate_dark_ritual(message: Message):
     else:
         team_button = KeyboardButton(text="Присоединиться к команде")
     
+    stats_button = KeyboardButton(text="Моя статистика")
+    
     # Создание клавиатуры с кнопками
     keyboard = ReplyKeyboardMarkup(
-        keyboard=[[truth_button, dare_button, leaderboard_button, team_button]], 
+        keyboard=[[truth_button, dare_button, leaderboard_button, team_button, stats_button]], 
         resize_keyboard=True
     )
     
     await message.answer("Приветствую, выбери: Откровенность, Испытание, присоединяйся к команде или выйди из команды?", reply_markup=keyboard)
 
 # Обработка кнопок
-@dp.message(lambda message: message.text in ["Откровенность", "Испытание", "Потёмки лидеров", "Присоединиться к команде", "Выйти из команды"])
+@dp.message(lambda message: message.text in ["Откровенность", "Испытание", "Потёмки лидеров", "Присоединиться к команде", "Выйти из команды", "Моя статистика"])
 async def handle_dark_choices(message: types.Message):
     if message.text == "Откровенность":
         await unleash_truth_or_dare(message, mode="truth")
         await update_leaderboard(message.from_user.id, message.from_user.username)
+        await update_player_stats(message.from_user.id, 'tasks_completed')
     elif message.text == "Испытание":
         await unleash_truth_or_dare(message, mode="dare")
         await update_leaderboard(message.from_user.id, message.from_user.username)
+        await update_player_stats(message.from_user.id, 'tasks_completed')
     elif message.text == "Потёмки лидеров":
         leaderboard = await retrieve_leaderboard()
         await message.answer(f"Тёмная элита:\n{leaderboard}")
@@ -308,6 +314,8 @@ async def handle_dark_choices(message: types.Message):
         await join_team(message)
     elif message.text == "Выйти из команды":
         await leave_team(message)
+    elif message.text == "Моя статистика":
+        await retrieve_player_stats(message)
 
 # Функция для присоединения к команде
 async def join_team(message: types.Message):
@@ -334,6 +342,7 @@ async def assign_team(message: types.Message):
     if user_id not in teams:
         teams[user_id] = selected_team
         await message.answer(f"Ты присоединился к команде {selected_team}. Теперь жди задания!")
+        await update_player_stats(user_id, 'teams_joined')
     else:
         await message.answer("Ты уже в другой команде.")
 
@@ -343,6 +352,7 @@ async def leave_team(message: types.Message):
     if user_id in teams:
         team = teams.pop(user_id)  # Убираем игрока из команды
         await message.answer(f"Ты вышел из команды {team}. Ты больше не связан с ней.")
+        await update_player_stats(user_id, 'teams_left')
     else:
         await message.answer("Ты не состоишь в команде.")
 
@@ -376,13 +386,33 @@ async def retrieve_leaderboard():
     leaders = cursor.fetchall()
     return "\n".join([f"{i+1}. {user[0]} - {user[1]} тьма" for i, user in enumerate(leaders)])
 
+# Функция для обновления статистики игрока
+async def update_player_stats(user_id, stat_type):
+    if user_id not in player_stats:
+        player_stats[user_id] = {'tasks_completed': 0, 'teams_joined': 0, 'teams_left': 0}
+    
+    if stat_type == 'tasks_completed':
+        player_stats[user_id]['tasks_completed'] += 1
+    elif stat_type == 'teams_joined':
+        player_stats[user_id]['teams_joined'] += 1
+    elif stat_type == 'teams_left':
+        player_stats[user_id]['teams_left'] += 1
+
+# Получение статистики игрока
+async def retrieve_player_stats(message: types.Message):
+    user_id = message.from_user.id
+    if user_id in player_stats:
+        stats = player_stats[user_id]
+        await message.answer(f"Твоя статистика:\nЗаданий выполнено: {stats['tasks_completed']}\nКоманд присоединился: {stats['teams_joined']}\nКоманд покинул: {stats['teams_left']}")
+    else:
+        await message.answer("У тебя нет статистики, так как ты еще не начал играть.")
+
 # Запуск бота
 async def summon_bot():
     await dp.start_polling(bot)
 
 if __name__ == '__main__':
     asyncio.run(summon_bot())
-
 
     
     file.write("# p-d\n")
