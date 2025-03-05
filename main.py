@@ -264,7 +264,7 @@ async def cmd_start(message: Message):
     # Создание кнопок для клавиатуры
     truth_button = KeyboardButton(text="Правда")
     dare_button = KeyboardButton(text="Вызов")
-    leaderboard_button = KeyboardButton(text="Таблица лидеров")
+    leaderboard_button = KeyboardButton(text="Таблица лидеров по бананам")
     
     # Создание клавиатуры с кнопками
     keyboard = ReplyKeyboardMarkup(
