@@ -5,7 +5,8 @@ import time
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 from aiogram.filters import Command
-from aiogram.utils.exceptions import ChatAdminRequired
+from aiogram.exceptions import ChatAdminRequired
+
 
 API_TOKEN = "7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ"
 bot = Bot(token=API_TOKEN)
