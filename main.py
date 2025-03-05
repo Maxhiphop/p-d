@@ -311,18 +311,16 @@ async def handle_buttons(message: types.Message):
         user_spam[user_id] = [t for t in user_spam[user_id] if current_time - t < 5]  # Убираем старые записи
 
         if len(user_spam[user_id]) > 3:  # Если больше 3 сообщений за 5 секунд
-           try:
+   try:
     await message.bot.restrict_chat_member(
         chat_id=message.chat.id,
-        user_id=user_id,
-        until_date=message.date + 1800,  # 30 минут мут
-        permissions=types.ChatPermissions(
-            can_send_messages=False
-        )
+        user_id=message.from_user.id,
+        permissions=types.ChatPermissions(can_send_messages=False),
+        until_date=int(time.time()) + 60  # Мут на 60 секунд
     )
-    await message.answer(f"🚫 {message.from_user.first_name}, не спамь! Ты в муте на 30 минут.")
-except AiogramAPIError:
-    await message.answer("⚠️ У меня нет прав, чтобы мутить пользователей.")
+except AiogramAPIError as e:
+    await message.answer(f"Ошибка: {e}")
+
 
 
     # Обработка кнопок
