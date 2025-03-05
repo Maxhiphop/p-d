@@ -7,7 +7,7 @@ from aiogram.filters import Command
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from aiogram.client.default import DefaultBotProperties
 
-bot = Bot(TOKEN, default=DefaultBotProperties(parse_mode="MarkdownV2"))
+bot = Bot("7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ", default=DefaultBotProperties(parse_mode="MarkdownV2"))
 
 
 TOKEN = "7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ"
