@@ -282,9 +282,9 @@ async def handle_buttons(message: types.Message):
     elif message.text == "Вызов":
         await message.answer(random.choice(dares))
         update_leaderboard(message.from_user.id, message.from_user.username)
-    elif message.text == "Таблица лидеров":
+    elif message.text == "Таблица лидеров по бананам ":
         leaderboard = get_leaderboard()
-        await message.answer(f"Топ игроки:\n{leaderboard}")
+        await message.answer(f"Топ бананщики:\n{leaderboard}")
 
 # Обновление таблицы лидеров
 def update_leaderboard(user_id, username):
