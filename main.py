@@ -311,18 +311,17 @@ async def handle_buttons(message: types.Message):
         user_spam[user_id] = [t for t in user_spam[user_id] if current_time - t < 5]  # Убираем старые записи
 
         if len(user_spam[user_id]) > 3:  # Если больше 3 сообщений за 5 секунд
-          try:
-              await message.bot.restrict_chat_member(
-        chat_id=message.chat.id,
-        user_id=message.from_user.id,
-        permissions=types.ChatPermissions(can_send_messages=False),
-        until_date=int(time.time()) + 60  # Мут на 60 секунд
-    )
-except AiogramAPIError as e:
-    await message.answer(f"Ошибка: {e}")
-
-
-
+            try:
+                await message.bot.restrict_chat_member(
+                    chat_id=message.chat.id,
+                    user_id=message.from_user.id,
+                    permissions=types.ChatPermissions(can_send_messages=False),
+                    until_date=int(time.time()) + 60  # Мут на 60 секунд
+                )
+                await message.answer("Вы были заблокированы на 60 секунд за частые сообщения.")
+            except AiogramAPIError as e:
+                await message.answer(f"Ошибка: {e}")
+    
     # Обработка кнопок
     if text == "правда":
         await message.answer(random.choice(truths))
@@ -340,6 +339,7 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())
+
     
     file.write("# p-d\n")
 import subprocess
