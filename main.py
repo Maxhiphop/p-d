@@ -26,7 +26,13 @@ team_categories = ["Темные маги", "Стражи правды", "Слу
 
 # Словарь для хранения команд
 teams = {}
-team_names = set()  # Множество для хранения уникальных имен команд
+
+# Пример данных для команд
+team_categories = ["Темные маги", "Стражи правды", "Слуги тени"]
+
+# Словарь для хранения команд
+teams = {}
+
 
 # Функция для получения случайного откровения или испытания
 def retrieve_random_item(lst):
@@ -278,20 +284,19 @@ async def initiate_dark_ritual(message: Message):
     truth_button = KeyboardButton(text="Откровенность")
     dare_button = KeyboardButton(text="Испытание")
     leaderboard_button = KeyboardButton(text="Потёмки лидеров")
-    team_button = KeyboardButton(text="Создать команду")
-    join_team_button = KeyboardButton(text="Присоединиться к команде")
+    team_button = KeyboardButton(text="Присоединиться к команде")
     leave_team_button = KeyboardButton(text="Выйти из команды")
     
     # Создание клавиатуры с кнопками
     keyboard = ReplyKeyboardMarkup(
-        keyboard=[[truth_button, dare_button, leaderboard_button, team_button, join_team_button, leave_team_button]], 
+        keyboard=[[truth_button, dare_button, leaderboard_button, team_button, leave_team_button]], 
         resize_keyboard=True
     )
     
-    await message.answer("Приветствую, выбери: Откровенность, Испытание, создавай команду, присоединяйся к существующей или выйди из команды?", reply_markup=keyboard)
+    await message.answer("Приветствую, выбери: Откровенность, Испытание, присоединяйся к команде или выйди из команды?", reply_markup=keyboard)
 
 # Обработка кнопок
-@dp.message(lambda message: message.text in ["Откровенность", "Испытание", "Потёмки лидеров", "Создать команду", "Присоединиться к команде", "Выйти из команды"])
+@dp.message(lambda message: message.text in ["Откровенность", "Испытание", "Потёмки лидеров", "Присоединиться к команде", "Выйти из команды"])
 async def handle_dark_choices(message: types.Message):
     if message.text == "Откровенность":
         await unleash_truth_or_dare(message, mode="truth")
@@ -302,78 +307,61 @@ async def handle_dark_choices(message: types.Message):
     elif message.text == "Потёмки лидеров":
         leaderboard = await retrieve_leaderboard()
         await message.answer(f"Тёмная элита:\n{leaderboard}")
-    elif message.text == "Создать команду":
-        await ask_for_team_name(message)
     elif message.text == "Присоединиться к команде":
-        await show_available_teams(message)
+        await join_team(message)
     elif message.text == "Выйти из команды":
         await leave_team(message)
 
-# Функция для создания команды
-async def ask_for_team_name(message: types.Message):
-    user_id = message.from_user.id
-    if user_id in teams:
-        await message.answer("Ты уже состоишь в команде.")
-        return
-    
-    # Запрашиваем название команды
-    await message.answer("Введите название для своей команды:")
-
-# Обработка ввода названия команды
-@dp.message(lambda message: message.text)
-async def create_team(message: types.Message):
-    user_id = message.from_user.id
-    team_name = message.text.strip()
-    
-    if user_id in teams:
-        await message.answer("Ты уже в команде.")
-        return
-
-    if team_name in team_names:
-        await message.answer(f"Команда с названием '{team_name}' уже существует. Попробуй другое название.")
-        return
-
-    # Создаем команду
-    teams[user_id] = team_name
-    team_names.add(team_name)  # Добавляем название команды в множество
-    await message.answer(f"Ты создал команду '{team_name}'! Теперь можешь приглашать других игроков или выполнять задания.")
-
 # Функция для присоединения к команде
-async def show_available_teams(message: types.Message):
-    if not team_names:
-        await message.answer("На данный момент нет доступных команд для присоединения.")
-        return
-    
-    # Отправляем список доступных команд
-    available_teams = "\n".join(team_names)
-    await message.answer(f"Доступные команды для присоединения:\n{available_teams}\nВведите название команды, к которой хотите присоединиться:")
-
-# Обработка присоединения к команде
-@dp.message(lambda message: message.text)
 async def join_team(message: types.Message):
     user_id = message.from_user.id
-    team_name = message.text.strip()
-    
     if user_id in teams:
         await message.answer("Ты уже в команде.")
         return
-
-    if team_name not in team_names:
-        await message.answer(f"Команда с названием '{team_name}' не существует. Попробуй выбрать другую.")
-        return
     
-    # Присоединяем игрока к выбранной команде
-    teams[user_id] = team_name
-    await message.answer(f"Ты присоединился к команде '{team_name}'! Теперь выполняйте задания вместе.")
+    # Выбор команды
+    keyboard = ReplyKeyboardMarkup(
+        keyboard=[[KeyboardButton(text=category)] for category in team_categories], 
+        resize_keyboard=True
+    )
+    
+    await message.answer("Выбери команду, в которую хочешь присоединиться:", reply_markup=keyboard)
+
+# Функция для выбора команды
+@dp.message(lambda message: message.text in team_categories)
+async def assign_team(message: types.Message):
+    user_id = message.from_user.id
+    selected_team = message.text
+    
+    # Добавление игрока в выбранную команду
+    if user_id not in teams:
+        teams[user_id] = selected_team
+        await message.answer(f"Ты присоединился к команде {selected_team}. Теперь жди задания!")
+    else:
+        await message.answer("Ты уже в другой команде.")
 
 # Функция для выхода из команды
 async def leave_team(message: types.Message):
     user_id = message.from_user.id
     if user_id in teams:
         team = teams.pop(user_id)  # Убираем игрока из команды
-        await message.answer(f"Ты вышел из команды '{team}'. Ты больше не связан с ней.")
+        await message.answer(f"Ты вышел из команды {team}. Ты больше не связан с ней.")
     else:
         await message.answer("Ты не состоишь в команде.")
+
+# Функция для командных заданий
+async def assign_team_task():
+    # Разделение участников по категориям
+    team_tasks = {
+        "Темные маги": "Выполните заклинание тьмы",
+        "Стражи правды": "Ответьте на философский вопрос",
+        "Слуги тени": "Пройдите через лабиринт тени"
+    }
+    
+    for user_id, team in teams.items():
+        task = team_tasks.get(team)
+        user = await bot.get_chat_member(chat_id=chat_id, user_id=user_id)
+        await bot.send_message(user_id, f"Ваша командное задание: {task}")
 
 # Обновление таблицы лидеров
 async def update_leaderboard(user_id, username):
