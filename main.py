@@ -11,7 +11,9 @@ from aiogram import Bot, Dispatcher
 
 # Создание бота и диспетчера
 bot = Bot("7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ", default=DefaultBotProperties(parse_mode="MarkdownV2"))
-dp = Dispatcher(bot)  # Здесь создается Dispatcher
+dp = Dispatcher()  # Создаём диспетчер без передачи бота
+dp.bot = bot  # Устанавливаем бот в диспетчер
+
 
 
 # Подключение к БД
