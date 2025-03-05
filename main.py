@@ -5,7 +5,7 @@ import time
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 from aiogram.filters import Command
-from aiogram.exceptions import ChatAdminRequired
+from aiogram.exceptions import AiogramAPIError
 
 
 API_TOKEN = "7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ"
@@ -311,21 +311,19 @@ async def handle_buttons(message: types.Message):
         user_spam[user_id] = [t for t in user_spam[user_id] if current_time - t < 5]  # Убираем старые записи
 
         if len(user_spam[user_id]) > 3:  # Если больше 3 сообщений за 5 секунд
-            try:
-                await message.bot.restrict_chat_member(
-                    chat_id=message.chat.id,
-                    user_id=user_id,
-                    until_date=message.date + 1800,  # 30 минут мут
-                    permissions=types.ChatPermissions(
-                        can_send_messages=False
-                    )
-                )
-                await message.answer(f"🚫 {message.from_user.first_name}, не спамь! Ты в муте на 30 минут.")
-            except ChatAdminRequired:
-                await message.answer("⚠️ У меня нет прав для мута пользователей.")
-            return
-    else:
-        user_spam[user_id] = [current_time]
+           try:
+    await message.bot.restrict_chat_member(
+        chat_id=message.chat.id,
+        user_id=user_id,
+        until_date=message.date + 1800,  # 30 минут мут
+        permissions=types.ChatPermissions(
+            can_send_messages=False
+        )
+    )
+    await message.answer(f"🚫 {message.from_user.first_name}, не спамь! Ты в муте на 30 минут.")
+except AiogramAPIError:
+    await message.answer("⚠️ У меня нет прав, чтобы мутить пользователей.")
+
 
     # Обработка кнопок
     if text == "правда":
