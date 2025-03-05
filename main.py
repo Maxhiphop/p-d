@@ -248,23 +248,25 @@ dares = [
     # Добавьте другие действия...
 ]
 
-def get_random_item(lst):
+# Функция для получения случайного откровения или испытания
+def retrieve_random_item(lst):
     return random.choice(lst)
 
-async def send_question_or_dare(message: types.Message, mode="truth"):
+# Асинхронная отправка откровения или испытания
+async def unleash_truth_or_dare(message: types.Message, mode="truth"):
     if mode == "truth":
-        question = get_random_item(truths)
-        await message.answer(f"Твоя правда: {question}")
+        revelation = retrieve_random_item(truths)
+        await message.answer(f"Твоя откровенность: {revelation}")
     else:
-        dare = get_random_item(dares)
-        await message.answer(f"Твой вызов: {dare}")
+        challenge = retrieve_random_item(dares)
+        await message.answer(f"Твоя испытание: {challenge}")
 
 @dp.message(Command("start"))
-async def cmd_start(message: Message):
+async def initiate_dark_ritual(message: Message):
     # Создание кнопок для клавиатуры
-    truth_button = KeyboardButton(text="Правда")
-    dare_button = KeyboardButton(text="Вызов")
-    leaderboard_button = KeyboardButton(text="Таблица лидеров")
+    truth_button = KeyboardButton(text="Откровенность")
+    dare_button = KeyboardButton(text="Испытание")
+    leaderboard_button = KeyboardButton(text="Потёмки лидеров")
     
     # Создание клавиатуры с кнопками
     keyboard = ReplyKeyboardMarkup(
@@ -272,22 +274,22 @@ async def cmd_start(message: Message):
         resize_keyboard=True
     )
     
-    await message.answer("Привет! Выбери: Правда или Вызов?", reply_markup=keyboard)
+    await message.answer("Приветствую, выбери: Откровенность или Испытание?", reply_markup=keyboard)
 
-@dp.message(lambda message: message.text in ["Правда", "Вызов", "Таблица лидеров"])  # Используем lambda для фильтрации
-async def handle_buttons(message: types.Message):
-    if message.text == "Правда":
-        await message.answer(random.choice(truths))
-        update_leaderboard(message.from_user.id, message.from_user.username)
-    elif message.text == "Вызов":
-        await message.answer(random.choice(dares))
-        update_leaderboard(message.from_user.id, message.from_user.username)
-    elif message.text == "Таблица лидеров":
-        leaderboard = get_leaderboard()
-        await message.answer(f"Топ бананщики:\n{leaderboard}")
+@dp.message(lambda message: message.text in ["Откровенность", "Испытание", "Потёмки лидеров"])  # Используем lambda для фильтрации
+async def handle_dark_choices(message: types.Message):
+    if message.text == "Откровенность":
+        await unleash_truth_or_dare(message, mode="truth")
+        await update_leaderboard(message.from_user.id, message.from_user.username)
+    elif message.text == "Испытание":
+        await unleash_truth_or_dare(message, mode="dare")
+        await update_leaderboard(message.from_user.id, message.from_user.username)
+    elif message.text == "Потёмки лидеров":
+        leaderboard = await retrieve_leaderboard()
+        await message.answer(f"Тёмная элита:\n{leaderboard}")
 
 # Обновление таблицы лидеров
-def update_leaderboard(user_id, username):
+async def update_leaderboard(user_id, username):
     cursor.execute("SELECT score FROM leaders WHERE user_id = ?", (user_id,))
     result = cursor.fetchone()
     if result:
@@ -297,17 +299,17 @@ def update_leaderboard(user_id, username):
     conn.commit()
 
 # Получение таблицы лидеров
-def get_leaderboard():
+async def retrieve_leaderboard():
     cursor.execute("SELECT username, score FROM leaders ORDER BY score DESC LIMIT 10")
     leaders = cursor.fetchall()
     return "\n".join([f"{i+1}. {user[0]} - {user[1]} банан" for i, user in enumerate(leaders)])
 
 # Запуск бота
-async def main():
+async def summon_bot():
     await dp.start_polling(bot)
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    asyncio.run(summon_bot())
     
     file.write("# p-d\n")
 import subprocess
