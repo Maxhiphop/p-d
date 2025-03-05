@@ -277,12 +277,16 @@ async def initiate_dark_ritual(message: Message):
     truth_button = KeyboardButton(text="Откровенность")
     dare_button = KeyboardButton(text="Испытание")
     leaderboard_button = KeyboardButton(text="Потёмки лидеров")
-    team_button = KeyboardButton(text="Присоединиться к команде")
-    leave_team_button = KeyboardButton(text="Выйти из команды")
+    
+    user_id = message.from_user.id
+    if user_id in teams:
+        team_button = KeyboardButton(text="Выйти из команды")
+    else:
+        team_button = KeyboardButton(text="Присоединиться к команде")
     
     # Создание клавиатуры с кнопками
     keyboard = ReplyKeyboardMarkup(
-        keyboard=[[truth_button, dare_button, leaderboard_button, team_button, leave_team_button]], 
+        keyboard=[[truth_button, dare_button, leaderboard_button, team_button]], 
         resize_keyboard=True
     )
     
@@ -330,9 +334,6 @@ async def assign_team(message: types.Message):
     if user_id not in teams:
         teams[user_id] = selected_team
         await message.answer(f"Ты присоединился к команде {selected_team}. Теперь жди задания!")
-        
-        # Логирование присоединения игрока
-        log_action(f"{message.from_user.username} присоединился к команде {selected_team}.")
     else:
         await message.answer("Ты уже в другой команде.")
 
@@ -342,9 +343,6 @@ async def leave_team(message: types.Message):
     if user_id in teams:
         team = teams.pop(user_id)  # Убираем игрока из команды
         await message.answer(f"Ты вышел из команды {team}. Ты больше не связан с ней.")
-        
-        # Логирование выхода игрока
-        log_action(f"{message.from_user.username} вышел из команды {team}.")
     else:
         await message.answer("Ты не состоишь в команде.")
 
@@ -377,11 +375,6 @@ async def retrieve_leaderboard():
     cursor.execute("SELECT username, score FROM leaders ORDER BY score DESC LIMIT 10")
     leaders = cursor.fetchall()
     return "\n".join([f"{i+1}. {user[0]} - {user[1]} тьма" for i, user in enumerate(leaders)])
-
-# Функция логирования
-def log_action(action):
-    with open("log.txt", "a") as file:  # Открываем файл для добавления
-        file.write(f"{action}\n")  # Записываем действие в файл
 
 # Запуск бота
 async def summon_bot():
