@@ -7,8 +7,12 @@ from aiogram.filters import Command
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from aiogram.client.default import DefaultBotProperties
 
+from aiogram import Bot, Dispatcher
+
 # Создание бота и диспетчера
 bot = Bot("7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ", default=DefaultBotProperties(parse_mode="MarkdownV2"))
+dp = Dispatcher(bot)  # Здесь создается Dispatcher
+
 
 # Подключение к БД
 conn = sqlite3.connect("leaderboard.db")
