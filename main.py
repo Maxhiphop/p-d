@@ -302,7 +302,7 @@ async def update_leaderboard(user_id, username):
 async def retrieve_leaderboard():
     cursor.execute("SELECT username, score FROM leaders ORDER BY score DESC LIMIT 10")
     leaders = cursor.fetchall()
-    return "\n".join([f"{i+1}. {user[0]} - {user[1]} банан" for i, user in enumerate(leaders)])
+    return "\n".join([f"{i+1}. {user[0]} - {user[1]} тьма" for i, user in enumerate(leaders)])
 
 # Запуск бота
 async def summon_bot():
