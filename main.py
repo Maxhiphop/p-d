@@ -8,7 +8,6 @@ from aiogram.filters import Command
 from aiogram.exceptions import AiogramError
 
 
-
 API_TOKEN = "7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ"
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
@@ -26,6 +25,7 @@ CREATE TABLE IF NOT EXISTS leaders (
 )
 """)
 conn.commit()
+
 
 # Списки вопросов и действий
 truths = [
@@ -254,6 +254,7 @@ dares = [
     # Добавьте другие действия...
 ]
 
+
 # Словарь для антиспама
 user_spam = {}
 
@@ -335,31 +336,12 @@ async def handle_buttons(message: types.Message):
         await message.answer(f"🏆 Топ игроков:\n{leaderboard}")
 
 
-   # Проверка спама
-current_time = time.time()
-if user_id in user_spam:
-    user_spam[user_id].append(current_time)
-    user_spam[user_id] = [t for t in user_spam[user_id] if current_time - t < 5]  # Убираем старые записи
-
-    if len(user_spam[user_id]) > 3:  # Если больше 3 сообщений за 5 секунд
-        try:
-            await message.bot.restrict_chat_member(
-                chat_id=message.chat.id,
-                user_id=message.from_user.id,
-                permissions=types.ChatPermissions(can_send_messages=False),
-                until_date=int(time.time()) + 60  # Мут на 60 секунд
-            )
-            await message.answer("Вы были заблокированы на 60 секунд за частые сообщения.")
-        except AiogramError as e:
-            await message.answer(f"Ошибка: {e}")
-
 # Запуск бота
 async def main():
     await dp.start_polling(bot)
 
 if __name__ == '__main__':
     asyncio.run(main())
-
     
     file.write("# p-d\n")
 import subprocess
