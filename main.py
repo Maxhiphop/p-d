@@ -5,6 +5,9 @@ import sqlite3
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from aiogram.client.default import DefaultBotProperties
+
+bot = Bot(TOKEN, default=DefaultBotProperties(parse_mode="MarkdownV2"))
 
 
 TOKEN = "7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ"
