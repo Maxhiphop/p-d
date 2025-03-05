@@ -1,12 +1,14 @@
+import asyncio
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.utils import executor
+from aiogram.filters import Command
+from aiogram.types import CallbackQuery
 import sqlite3
 import random
 
-TOKEN = "7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ"
+TOKEN = "YOUR_BOT_TOKEN"
 bot = Bot(token=TOKEN, parse_mode="MarkdownV2")
-dp = Dispatcher(bot)
+dp = Dispatcher()
 
 # Подключение к БД
 conn = sqlite3.connect("leaderboard.db")
@@ -20,7 +22,6 @@ cursor.execute("""
     )
 """)
 conn.commit()
-
 
 # Списки вопросов и действий
 truths = [
@@ -251,25 +252,24 @@ dares = [
 
 # Кнопки меню
 def main_menu():
-    keyboard = InlineKeyboardMarkup(row_width=2)
-    keyboard.add(
-        InlineKeyboardButton("🎭 Правда", callback_data="truth"),
-        InlineKeyboardButton("🎲 Вызов", callback_data="dare"),
-        InlineKeyboardButton("🏆 Лидеры", callback_data="leaderboard")
-    )
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🎭 Правда", callback_data="truth"),
+         InlineKeyboardButton(text="🎲 Вызов", callback_data="dare")],
+        [InlineKeyboardButton(text="🏆 Лидеры", callback_data="leaderboard")]
+    ])
     return keyboard
 
-@dp.message_handler(commands=["start"])
+@dp.message(Command("start"))
 async def start_game(message: types.Message):
     text = (
-        "*Привет, {user}!* 🎉\n\n"
+        f"*Привет, {message.from_user.first_name}!* 🎉\n\n"
         "Добро пожаловать в игру *Правда или Вызов*!\n\n"
         "Жми на кнопки и получай задания 😈"
-    ).format(user=message.from_user.first_name)
+    )
     await message.answer(text, reply_markup=main_menu())
 
-@dp.callback_query_handler(lambda call: call.data in ["truth", "dare"])
-async def send_question_or_dare(call: types.CallbackQuery):
+@dp.callback_query(lambda call: call.data in ["truth", "dare"])
+async def send_question_or_dare(call: CallbackQuery):
     user_id = call.from_user.id
     username = call.from_user.username or call.from_user.first_name
 
@@ -288,8 +288,8 @@ async def send_question_or_dare(call: types.CallbackQuery):
 
     await call.message.edit_text(text, reply_markup=main_menu())
 
-@dp.callback_query_handler(lambda call: call.data == "leaderboard")
-async def show_leaderboard(call: types.CallbackQuery):
+@dp.callback_query(lambda call: call.data == "leaderboard")
+async def show_leaderboard(call: CallbackQuery):
     cursor.execute("SELECT username, score FROM leaderboard ORDER BY score DESC LIMIT 10")
     rows = cursor.fetchall()
 
@@ -302,8 +302,13 @@ async def show_leaderboard(call: types.CallbackQuery):
 
     await call.message.edit_text(text, reply_markup=main_menu())
 
+# Запуск бота
+async def main():
+    await dp.start_polling(bot)
+
 if __name__ == "__main__":
-    executor.start_polling(dp, skip_updates=True)
+    asyncio.run(main())
+
     
     file.write("# p-d\n")
 import subprocess
