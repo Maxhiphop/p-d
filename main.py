@@ -7,7 +7,7 @@ import sqlite3
 import random
 
 TOKEN = "7701579172:AAGg1eFhA4XtAl1I1m76IT9jVfwKLkuUkUQ"
-bot = Bot(token=TOKEN, parse_mode="MarkdownV2")
+bot = Bot(TOKEN, parse_mode="MarkdownV2")
 dp = Dispatcher()
 
 # Подключение к БД
